@@ -1,0 +1,9 @@
+{
+  "mode": "multiplier",
+  "channel_spend_multipliers": {
+    "google": 1.0,
+    "meta": 1.2,
+    "bing": 1.0
+  },
+  "description": "Scale Meta period spend +20% vs run-rate baseline"
+}

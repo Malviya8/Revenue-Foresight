@@ -1,0 +1,6 @@
+# Demo-only deps (NOT installed by scorers — keep requirements.txt lean).
+# pip install -r requirements-demo.txt
+
+-r requirements.txt
+streamlit==1.40.2
+plotly==5.24.1
