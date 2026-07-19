@@ -4,7 +4,7 @@ Probabilistic ecommerce **revenue** and **ROAS** forecasting across Google Ads, 
 
 **Python:** 3.12.x  
 
-Holdout (sample data): model wMAPE **~0.41** vs run-rate baseline **~1.23** (~**67%** lift); interval coverage **~0.36** with tight ~2.3× P10–P90 bands.
+Holdout TEST (sample data, `scripts/evaluate.py`): model wMAPE **0.500** vs run-rate baseline **1.234** (**59.5%** lift, excl. Bing); P10–P90 coverage **74.0%** via Mondrian split-conformal (chronological 60/20/20 train/calib/test).
 
 ---
 
@@ -77,6 +77,22 @@ Platform attribution is used as-is (no custom MMM).
 python src/train.py --data-dir ./data --model-out ./pickle/model.pkl
 ```
 
+**Evaluate (TEST holdout metrics):**
+```bash
+python scripts/evaluate.py
+```
+Writes `output/evaluation_report.txt` + `output/evaluation_metrics.json`.
+Headline numbers are also frozen in [`docs/evaluation_snapshot.json`](docs/evaluation_snapshot.json).
+
+**Optional fair Prophet benchmark (evaluation only):**
+```bash
+pip install -r requirements-eval.txt
+python scripts/evaluate.py --with-prophet
+```
+This refits Prophet at each TEST cutoff and compares it with LightGBM and
+run-rate on exactly the same Google/Meta channel-level rows. Prophet is not
+installed or invoked by the offline scoring path.
+
 **Budget simulation:**
 ```bash
 python src/simulate.py --budget-json scenarios/meta_plus20.json \
@@ -100,6 +116,16 @@ back to offline heuristic with no key.
 |------|--------|
 | S0–S6 Build + demo | Complete |
 | S7 Docs + submission package | Complete |
+| TEST evaluate snapshot | Complete (`docs/evaluation_snapshot.json`) |
+
+---
+
+## For reviewers (60 seconds)
+
+1. **Problem:** probabilistic multi-channel revenue/ROAS planning under budget what-ifs.  
+2. **Approach:** LightGBM P10/P50/P90 + Mondrian split-conformal + hierarchy reconcile.  
+3. **Holdout:** wMAPE **0.500** vs run-rate **1.234** (**59.5%** lift, excl. Bing); coverage **74.0%**.  
+4. **Score:** `./run.sh ./data ./pickle/model.pkl ./output/predictions.csv` then `python src/verify_submission.py`.
 
 ---
 

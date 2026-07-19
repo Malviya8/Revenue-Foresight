@@ -4,6 +4,8 @@
 **Subject:** AIgnition 3.0 Submission — `<TEAM_NAME>`  
 **Deadline:** 19 July 2026, 10:00 PM IST  
 
+Fill `<TEAM_NAME>`, members, and college before sending. Repo URL is ready.
+
 ---
 
 Hello NetElixir team,
@@ -15,7 +17,7 @@ Please find our AIgnition 3.0 submission below.
 **College:** `<COLLEGE>`  
 
 **Public GitHub repository:**  
-`<https://github.com/ORG/REPO>`  
+https://github.com/Malviya8/aignition-forecasting  
 
 **Exact scoring command:**  
 ```bash
@@ -25,6 +27,9 @@ Please find our AIgnition 3.0 submission below.
 **Python:** 3.12.x  
 **Dependencies:** pinned in `requirements.txt`  
 **Trained artifact:** `pickle/model.pkl` (committed; scorers do not retrain)
+
+**Holdout (sample data, TEST):** wMAPE 0.500 vs run-rate 1.234 (59.5% lift, excl. Bing); P10–P90 coverage 74.0%.  
+See `docs/backtest_results.md` / `docs/evaluation_snapshot.json`.
 
 **Documentation (in repo):**
 - Technical methodology — `docs/methodology.md`
@@ -49,4 +54,4 @@ Thank you,
 - [ ] `pickle/model.pkl` is committed and pullable without Git LFS issues
 - [ ] Fresh clone dry-run: install → `./run.sh` → valid `predictions.csv`
 - [ ] `python src/verify_submission.py` → `VERIFY OK`
-- [ ] Team / college / email fields filled
+- [ ] Team / college / email fields filled (`<TEAM_NAME>`, members, college)

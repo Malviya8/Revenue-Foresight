@@ -12,5 +12,5 @@ source "$VENV/bin/activate"
 pip install -q -r requirements.txt
 bash run.sh ./data ./pickle/model.pkl ./output/predictions.csv
 python src/verify_submission.py
-python check.py
+python scripts/check_predictions.py
 echo "Linux dry-run OK"

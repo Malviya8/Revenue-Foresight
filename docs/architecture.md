@@ -52,7 +52,8 @@ CSV (Google / Meta / Bing)
 ```
 forecast tables + QA inventory + multipliers
   -> llm_layer.build_insight_context  (numbers only)
-  -> if OPENAI_API_KEY: Chat Completions (gpt-4o-mini default)
+  -> if GROQ_API_KEY: Groq Chat Completions (default in auto)
+     elif OPENAI_API_KEY: OpenAI Chat Completions (gpt-4o-mini default)
      else: heuristic_insights()
   -> markdown causal briefing
 ```
@@ -62,6 +63,7 @@ Constraints:
 - Never imported by `run.sh`
 - Prompt forbids inventing metrics not in context JSON
 - Failures soft-fallback to heuristic so the demo never crashes
+- Free path: set `GROQ_API_KEY` from https://console.groq.com (or paste in the Streamlit sidebar)
 
 ## Deployment mental model for judges
 

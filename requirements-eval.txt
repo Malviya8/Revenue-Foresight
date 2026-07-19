@@ -1,0 +1,4 @@
+# Optional evaluation-only dependencies. Not installed by scorers and not used
+# by run.sh/model.pkl.
+-r requirements.txt
+prophet==1.3.0

@@ -25,6 +25,7 @@ source /tmp/aignition-venv/bin/activate
 pip install -r requirements.txt
 bash run.sh ./data ./pickle/model.pkl ./output/predictions.csv
 python src/verify_submission.py
+python scripts/check_predictions.py   # optional ROAS/spread sanity
 
 # Windows PowerShell
 python -m venv .venv_clean
@@ -32,6 +33,10 @@ python -m venv .venv_clean
 pip install -r requirements.txt
 .\run.ps1 ./data ./pickle/model.pkl ./output/predictions.csv
 python src/verify_submission.py
+python scripts/check_predictions.py
+
+# TEST holdout metrics (not required for scorers)
+python scripts/evaluate.py
 ```
 
 ## Guide checklist

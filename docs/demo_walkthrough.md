@@ -30,9 +30,9 @@ Show: repo layout + `run.sh` (scoring) vs Streamlit (prototype).
 
 1. Horizon = **30**. Multipliers all **1.0**. Run forecast.  
 2. **Forecast** tab: P50 revenue, P10–P90 fan, blended ROAS.  
-3. Mention holdout lift: ~**67%** wMAPE improvement vs run-rate baseline.  
-4. Note intervals are capped for planning (~2.3× P90/P10); holdout coverage is ~**36%**
-   (tighter bands trade coverage for usable ranges — see `docs/backtest_results.md`).
+3. Mention holdout lift: **59.5%** wMAPE improvement vs run-rate baseline (TEST, excl. Bing).  
+4. Note intervals use **Mondrian split-conformal** (**74.0%** coverage on TEST);
+   see `docs/backtest_results.md` / `python scripts/evaluate.py`.
 
 ---
 
@@ -49,8 +49,8 @@ Show: repo layout + `run.sh` (scoring) vs Streamlit (prototype).
 
 ## 4. Hierarchy drill-down (60 sec)
 
-1. **Channels** — contribution and reconciliation (aggregate = Σ channels).  
-2. **Campaigns** — top contributors / wide intervals = operational risk.
+1. **Channels** — contribution and reconciliation (aggregate = Σ channels). Prefer this level for planning claims.  
+2. **Campaigns** — exploratory only: top contributors / wide intervals = operational risk (sparse entities, especially Bing).
 
 ---
 

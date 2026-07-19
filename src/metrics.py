@@ -16,6 +16,24 @@ def wmape(y_true: np.ndarray, y_pred: np.ndarray) -> float:
     return float(np.abs(y_true - y_pred).sum() / denom)
 
 
+def mase(y_true: np.ndarray, y_pred: np.ndarray, baseline: np.ndarray) -> float:
+    """
+    Mean Absolute Scaled Error vs a naive baseline.
+
+    MASE = mean(|y - pred|) / mean(|y - baseline|). Values < 1 mean the model
+    beats the baseline on absolute error.
+    """
+    y_true = np.asarray(y_true, dtype=float)
+    y_pred = np.asarray(y_pred, dtype=float)
+    baseline = np.asarray(baseline, dtype=float)
+    if len(y_true) == 0:
+        return float("nan")
+    denom = float(np.mean(np.abs(y_true - baseline)))
+    if denom <= 0:
+        return float("nan")
+    return float(np.mean(np.abs(y_true - y_pred)) / denom)
+
+
 def smape(y_true: np.ndarray, y_pred: np.ndarray) -> float:
     y_true = np.asarray(y_true, dtype=float)
     y_pred = np.asarray(y_pred, dtype=float)

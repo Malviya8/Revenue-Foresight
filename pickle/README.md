@@ -4,7 +4,8 @@
 
 - **Do not retrain inside `run.sh`** — scorers load this file offline.
 - **Retrain locally (optional):** `python src/train.py --data-dir ./data --model-out ./pickle/model.pkl`
-- **Format:** `RevenueQuantileModel` (P10 / P50 / P90 boosters + `conformal_rel` interval scale)
-- **Expected size:** ~1–2 MB
+- **Format:** `RevenueQuantileModel` — P10/P50/P90 LightGBM boosters + Mondrian `conformal_adjustments`
+- **Expected size:** ~6–7 MB (LightGBM boosters + conformal strata)
 
-If the file is missing or empty, `predict.py` falls back to a schema-valid historical-ROAS stub (for local dev only — commit the real artifact before submission).
+If the file is missing, empty, or not a usable `RevenueQuantileModel`, `predict.py`
+**raises** (no silent stub). Commit the real artifact before scoring or submission.

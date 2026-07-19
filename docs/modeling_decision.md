@@ -42,6 +42,23 @@ cleaned panel
 Prophet (or a seasonal naive) may still appear as a **channel-level baseline**
 in the writeup to prove lift — not as the scored `model.pkl` path.
 
+## Prophet benchmark (TEST only)
+
+`python scripts/evaluate.py --with-prophet` performs a fair walk-forward
+benchmark: Prophet is refit at every TEST `as_of_date`, sees only history
+available at that cutoff, uses planned spend as a regressor, and is scored on
+exactly the same Google/Meta channel-level rows as LightGBM.
+
+| Model | Channel-level TEST wMAPE (Google + Meta, n=48) |
+|-------|-----------------------------------------------|
+| LightGBM quantile P50 | **48.7%** |
+| Prophet + spend regressor | 98.5% |
+| Run-rate | 114.3% |
+
+LightGBM improves on Prophet by **50.5%** on this matched slice. Per channel:
+Google 50.7% vs Prophet 92.1%; Meta 39.5% vs Prophet 128.3%. This validates
+Prophet as a useful benchmark, but not as the primary submission model.
+
 ## Alternatives considered
 
 | Option | Role |

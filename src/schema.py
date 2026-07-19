@@ -137,11 +137,31 @@ QUANTILES: tuple[float, ...] = (0.1, 0.5, 0.9)
 # Feature windows + ROAS winsor for *training features only* (not output ROAS).
 FEATURE_WINDOWS: tuple[int, ...] = (7, 14, 28, 60)
 ROAS_WINSOR_CAP: float = 50.0
-# Planning-useful interval half-width vs P50. 0.40 => P90/P10 ≈ 2.3x when binding.
-MAX_INTERVAL_HALF_WIDTH: float = 0.40
+# Split-conformal target coverage (1 - alpha). Adjustment is the empirical
+# quantile of calibration nonconformity scores — never grid-searched.
+CONFORMAL_TARGET_COVERAGE: float = 0.80
+# Winsorize nonconformity scores at this percentile before the conformal
+# quantile so a single outlier cannot inflate the band (esp. small strata
+# where ceil((n+1)*0.80)/n approaches 1.0).
+CONFORMAL_SCORE_TRIM_Q: float = 0.95
+# Holiday stratum adjustment is also clipped to this multiple of the matching
+# non-holiday adjustment. Holiday residual scales can have a heavy right tail
+# even after 95th winsorization (the 80% conformal level sits below 95%).
+CONFORMAL_HOLIDAY_MAX_RATIO: float = 5.0
+# Mondrian strata with fewer than this many score points fall back to parent
+# group; holiday strata may augment scores from train (same channel+season).
+CONFORMAL_MIN_STRATUM: int = 12
+# Chronological split fractions: train / calibration / test.
+SPLIT_TRAIN_FRAC: float = 0.60
+SPLIT_CALIB_FRAC: float = 0.20
+SPLIT_TEST_FRAC: float = 0.20
 # Soft floor so aggregate/channel P10 is not "lose money" when history is healthy.
-# Applied only when P50 ROAS > 2.0 (see model.predict).
+# Applied only when P50 ROAS > 2.0 (see model.predict) — does not change p50.
 MIN_P10_ROAS_WHEN_HEALTHY: float = 1.0
+# Low-spend ROAS post-process (predict path).
+LOW_SPEND_THRESHOLD: float = 50.0
+LOW_SPEND_ROAS_CAP: float = 30.0
+MIN_P10_ROAS_GLOBAL: float = 0.1
 
 # Columns that identify an inference / training row (not model inputs).
 FEATURE_ID_COLUMNS: list[str] = [
