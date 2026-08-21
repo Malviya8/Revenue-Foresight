@@ -8,6 +8,23 @@ Holdout TEST (sample data, `scripts/evaluate.py`): model wMAPE **0.500** vs run-
 
 ---
 
+## Demo
+
+Plan a mix, then score the next 30 / 60 / 90 days — a likely number plus a cautious and optimistic range.
+
+![Landing — set horizon and spend what-ifs, then run the forecast](docs/images/demo-landing.png)
+
+![Outlook — P10 / P50 / P90 store-level revenue](docs/images/demo-outlook.png)
+
+![Channels — Google, Meta, and Microsoft Ads on one planning layer](docs/images/demo-channels.png)
+
+```bash
+pip install -r requirements-demo.txt
+streamlit run app.py
+```
+
+---
+
 ## Quick start
 
 ```bash
@@ -35,7 +52,7 @@ No network, no prompts, no retraining at score time.
 ├── scenarios/             # Example budget what-ifs
 ├── src/                   # Ingest → features → model → predict
 ├── demo/                  # Streamlit prototype + LLM insights
-├── docs/                  # Methodology, architecture, walkthrough
+├── docs/                  # Methodology, architecture, walkthrough, demo screenshots
 └── output/                # Local artifacts (gitignored except .gitkeep)
 ```
 
