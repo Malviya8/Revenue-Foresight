@@ -1,6 +1,5 @@
-# Demo-only deps (NOT installed by the scoring CLI — keep requirements.txt lean).
+# Demo-only alias. Same pins as requirements.txt (includes Streamlit + Plotly).
 # pip install -r requirements-demo.txt
+# Scoring CLI: pip install -r requirements.txt still works; extra UI packages are unused.
 
 -r requirements.txt
-streamlit==1.40.2
-plotly==5.24.1
