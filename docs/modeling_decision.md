@@ -11,11 +11,11 @@ coverage), baselines (Ridge / seasonal-naive), and optional conformal
 calibration of intervals.
 
 **Not primary:** Prophet. Strong for univariate seasonality, weak for
-budget-conditional, multi-entity ecommerce panel forecasting under this brief.
+budget-conditional, multi-entity ecommerce panel forecasting for this use case.
 
 ## Why this fits *this* data
 
-Sample panel reality (S1 QA):
+Sample panel reality (data QA):
 
 - ~25k daily campaign rows across Google / Meta / Bing
 - Strong **Nov–Dec seasonality** (all channels)
@@ -23,9 +23,9 @@ Sample panel reality (S1 QA):
   + Winsorized features, not fragile ARIMA/Prophet on sparse series
 - Bing is sparse (~32% zero-activity rows) → shared model with hierarchy
   features beats thousands of per-series Prophets
-- Brief requires **budget simulation** → spend/budget must be covariates;
+- Use case requires **budget simulation** → spend/budget must be covariates;
   Prophet does not model spend→revenue response well
-- Scorers need one pickled artifact + offline `run.sh` → GBDT pickle is
+- Score time needs one pickled artifact + offline `run.sh` → GBDT pickle is
   standard and stable when versions are pinned
 
 ## Architecture
@@ -57,7 +57,7 @@ exactly the same Google/Meta channel-level rows as LightGBM.
 
 LightGBM improves on Prophet by **50.5%** on this matched slice. Per channel:
 Google 50.7% vs Prophet 92.1%; Meta 39.5% vs Prophet 128.3%. This validates
-Prophet as a useful benchmark, but not as the primary submission model.
+Prophet as a useful benchmark, but not as the primary production model.
 
 ## Alternatives considered
 

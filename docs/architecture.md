@@ -32,7 +32,7 @@
 | `model.py` / `train.py` | LightGBM quantiles + conformal |
 | `predict.py` / `reconcile.py` | Inference + hierarchy consistency |
 | `budget.py` / `simulate.py` | Spend scenarios |
-| `verify_submission.py` | Submission contract checks |
+| `verify_output.py` | Output-contract checks |
 | `metrics.py` | wMAPE / coverage / baseline |
 
 ## Forecasting pipeline
@@ -65,10 +65,10 @@ Constraints:
 - Failures soft-fallback to heuristic so the demo never crashes
 - Free path: set `GROQ_API_KEY` from https://console.groq.com (or paste in the Streamlit sidebar)
 
-## Deployment mental model for judges
+## How to run it
 
-1. Clone public repo  
-2. `pip install -r requirements.txt`  
-3. Replace `data/` with held-out CSVs (same schema)  
-4. `./run.sh ./data ./pickle/model.pkl ./output/predictions.csv`  
+1. Clone the repo
+2. `pip install -r requirements.txt`
+3. Replace `data/` with your CSVs (same schema)
+4. `./run.sh ./data ./pickle/model.pkl ./output/predictions.csv`
 5. Optionally: `streamlit run app.py` for the live walkthrough  

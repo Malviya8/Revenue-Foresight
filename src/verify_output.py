@@ -1,9 +1,9 @@
 """
-Verify submission contract artifacts (S5).
+Verify repo layout and predictions.csv against the output contract.
 
 Usage (from repo root, after a successful run):
-  python src/verify_submission.py
-  python src/verify_submission.py --predictions ./output/predictions.csv
+  python src/verify_output.py
+  python src/verify_output.py --predictions ./output/predictions.csv
 """
 
 from __future__ import annotations
@@ -102,7 +102,7 @@ def check_predictions(path: Path) -> list[str]:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Verify AIgnition submission contract")
+    parser = argparse.ArgumentParser(description="Verify Revenue Foresight output contract")
     parser.add_argument("--root", default=".", help="Repo root")
     parser.add_argument(
         "--predictions",

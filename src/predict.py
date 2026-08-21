@@ -212,7 +212,7 @@ def _require_predictable(model: object, model_path: Path):
     raise TypeError(
         f"Unsupported model artifact at {model_path}: expected RevenueQuantileModel "
         "with a callable .predict (or a dict with a 'predict' callable). "
-        "Silent hist-ROAS stubs are disabled so scorers cannot emit fake CSVs."
+        "Silent hist-ROAS stubs are disabled so the CLI cannot emit fake CSVs."
     )
 
 

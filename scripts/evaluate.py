@@ -1,5 +1,5 @@
 """
-AIgnition Forecasting — split-conformal evaluation on the held-out TEST set.
+Revenue Foresight — split-conformal evaluation on the held-out TEST set.
 
 Chronological 60/20/20 split (same as train.py):
   train / calib used only if rebuilding; scoring is always on TEST (final 20%).
@@ -593,7 +593,7 @@ def format_report(metrics: dict[str, Any]) -> str:
 
     lines: list[str] = []
     lines.append("═══════════════════════════════════════")
-    lines.append(" AIGNITION FORECAST EVALUATION REPORT")
+    lines.append(" REVENUE FORESIGHT EVALUATION REPORT")
     lines.append("═══════════════════════════════════════")
     lines.append("")
 

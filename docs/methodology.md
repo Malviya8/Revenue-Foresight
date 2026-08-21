@@ -1,4 +1,4 @@
-# Technical documentation — AIgnition Forecasting
+# Technical documentation — Revenue Foresight
 
 Probabilistic revenue and ROAS forecasting for ecommerce marketing agencies
 (Google Ads, Meta Ads, Microsoft Ads). Aggregate planning horizons: **30 / 60 / 90** days.
@@ -114,10 +114,10 @@ Policies & quirks: [`data_assumptions.md`](data_assumptions.md).
 ## 4. Assumptions
 
 1. Platform-reported conversion value = revenue for that channel (as-is attribution).  
-2. Cross-channel sums may overlap users; acceptable under brief constraints.  
+2. Cross-channel sums may overlap users; treat blended totals as planning figures, not unique-user revenue.  
 3. Future spend defaults to recent run-rate × horizon unless a scenario overrides it.  
 4. Sparse campaigns borrow strength via shared GBDT + type/channel features.  
-5. Output column schema in [`output_contract.md`](output_contract.md) is our contract until organizers publish a different official format.
+5. Output column schema in [`output_contract.md`](output_contract.md) is the scored CSV contract.
 
 ---
 
@@ -127,7 +127,7 @@ Policies & quirks: [`data_assumptions.md`](data_assumptions.md).
 2. **Spend response** is learned from historical covariation — not a controlled experiment; large budget shocks can show diminishing (or noisy) returns.  
 3. **Seasonality** is calendar-feature based; brand-new peak events outside history are under-represented.  
 4. **Meta `daily_budget`** often missing → budget-fill features partially undefined.  
-5. **Provisional prediction schema** — confirm scored CSV columns with organizers if published separately.  
+5. **Prediction schema** — scored CSV columns are defined in [`output_contract.md`](output_contract.md).  
 6. Intervals are calibrated globally (relative); a single conformal radius cannot perfectly fit every entity scale.
 
 ### Bing Channel Limitations
@@ -165,9 +165,9 @@ Architecture: [`architecture.md`](architecture.md). Walkthrough: [`demo_walkthro
 # Score path
 pip install -r requirements.txt
 bash run.sh ./data ./pickle/model.pkl ./output/predictions.csv
-python src/verify_submission.py
+python src/verify_output.py
 
-# Retrain offline (not done by scorers)
+# Retrain offline (not done by the scoring CLI)
 python src/train.py --data-dir ./data --model-out ./pickle/model.pkl
 
 # Demo

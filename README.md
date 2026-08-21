@@ -1,23 +1,23 @@
-# AIgnition Forecasting
+# Revenue Foresight
 
-Probabilistic ecommerce **revenue** and **ROAS** forecasting across Google Ads, Meta Ads, and Microsoft Ads — built for NetElixir AIgnition 3.0.
+Probabilistic ecommerce **revenue** and **ROAS** forecasting across Google Ads, Meta Ads, and Microsoft Ads.
 
-**Python:** 3.12.x  
+**Python:** 3.12.x
 
 Holdout TEST (sample data, `scripts/evaluate.py`): model wMAPE **0.500** vs run-rate baseline **1.234** (**59.5%** lift, excl. Bing); P10–P90 coverage **74.0%** via Mondrian split-conformal (chronological 60/20/20 train/calib/test).
 
 ---
 
-## Quick start (scorers)
+## Quick start
 
 ```bash
 pip install -r requirements.txt
 ./run.sh ./data ./pickle/model.pkl ./output/predictions.csv
 # Windows: .\run.ps1 ./data ./pickle/model.pkl ./output/predictions.csv
-python src/verify_submission.py
+python src/verify_output.py
 ```
 
-Contract: three args (`DATA_DIR`, `MODEL_PATH`, `OUTPUT_PATH`) with those defaults.  
+Contract: three args (`DATA_DIR`, `MODEL_PATH`, `OUTPUT_PATH`) with those defaults.
 No network, no prompts, no retraining at score time.
 
 ---
@@ -41,7 +41,7 @@ No network, no prompts, no retraining at score time.
 
 ---
 
-## Documentation (deliverables)
+## Documentation
 
 | Doc | Purpose |
 |-----|---------|
@@ -49,8 +49,7 @@ No network, no prompts, no retraining at score time.
 | [`docs/architecture.md`](docs/architecture.md) | Frontend / backend / pipeline / LLM flow |
 | [`docs/demo_walkthrough.md`](docs/demo_walkthrough.md) | 5–7 min presentation script |
 | [`docs/output_contract.md`](docs/output_contract.md) | `predictions.csv` schema |
-| [`docs/submission_checklist.md`](docs/submission_checklist.md) | Pre-submit checks |
-| [`docs/SUBMISSION_EMAIL.md`](docs/SUBMISSION_EMAIL.md) | Email template to NetElixir |
+| [`docs/release_checklist.md`](docs/release_checklist.md) | Pre-publish checks |
 | [`docs/data_assumptions.md`](docs/data_assumptions.md) | Cleaning + attribution policy |
 | [`docs/modeling_decision.md`](docs/modeling_decision.md) | Why LightGBM (+ sklearn), not Prophet-primary |
 | [`docs/backtest_results.md`](docs/backtest_results.md) | Holdout metrics summary |
@@ -110,27 +109,9 @@ back to offline heuristic with no key.
 
 ---
 
-## Status
+## At a glance
 
-| Step | Status |
-|------|--------|
-| S0–S6 Build + demo | Complete |
-| S7 Docs + submission package | Complete |
-| TEST evaluate snapshot | Complete (`docs/evaluation_snapshot.json`) |
-
----
-
-## For reviewers (60 seconds)
-
-1. **Problem:** probabilistic multi-channel revenue/ROAS planning under budget what-ifs.  
-2. **Approach:** LightGBM P10/P50/P90 + Mondrian split-conformal + hierarchy reconcile.  
-3. **Holdout:** wMAPE **0.500** vs run-rate **1.234** (**59.5%** lift, excl. Bing); coverage **74.0%**.  
-4. **Score:** `./run.sh ./data ./pickle/model.pkl ./output/predictions.csv` then `python src/verify_submission.py`.
-
----
-
-## Submission
-
-Email **public GitHub URL**, the exact `./run.sh ...` command, and team details to  
-`sunitha.k@netelixir.us` by **19 July 2026, 10:00 PM IST**.  
-Template: [`docs/SUBMISSION_EMAIL.md`](docs/SUBMISSION_EMAIL.md).
+1. **Problem:** probabilistic multi-channel revenue/ROAS planning under budget what-ifs.
+2. **Approach:** LightGBM P10/P50/P90 + Mondrian split-conformal + hierarchy reconcile.
+3. **Holdout:** wMAPE **0.500** vs run-rate **1.234** (**59.5%** lift, excl. Bing); coverage **74.0%**.
+4. **Score:** `./run.sh ./data ./pickle/model.pkl ./output/predictions.csv` then `python src/verify_output.py`.

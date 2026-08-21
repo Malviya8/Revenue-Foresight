@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Scorer contract:
+# Scoring contract:
 #   ./run.sh <DATA_DIR> <MODEL_PATH> <OUTPUT_PATH>
 # Defaults support local no-arg runs.
 
@@ -9,7 +9,7 @@ DATA_DIR="${1:-./data}"
 MODEL_PATH="${2:-./pickle/model.pkl}"
 OUTPUT_PATH="${3:-./output/predictions.csv}"
 
-# Prefer python3 when available (Linux scorers); fall back to python (Windows).
+# Prefer python3 when available (Linux); fall back to python (Windows).
 if command -v python3 >/dev/null 2>&1; then
   PYTHON=python3
 elif command -v python >/dev/null 2>&1; then

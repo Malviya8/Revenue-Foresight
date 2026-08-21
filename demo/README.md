@@ -1,4 +1,4 @@
-# AIgnition Forecasting — Demo
+# Revenue Foresight — Demo
 
 ```bash
 pip install -r requirements-demo.txt

@@ -1,6 +1,6 @@
 # Demo walkthrough (5–7 minutes)
 
-Use this as the live script for judges / final presentation.
+Use this as the live script for a demo or walkthrough.
 Run beforehand: `streamlit run app.py`
 
 ---
@@ -58,7 +58,7 @@ Show: repo layout + `run.sh` (scoring) vs Streamlit (prototype).
 
 1. **AI Insights** → Generate (API key optional; heuristic works offline).  
 2. Show: why / risks / reallocation bullets citing the same numbers.  
-3. Emphasize: “LLM is demo-only — scorers never hit the network.”
+3. Emphasize: “LLM is demo-only — the scoring CLI never hits the network.”
 
 ---
 
@@ -66,7 +66,7 @@ Show: repo layout + `run.sh` (scoring) vs Streamlit (prototype).
 
 > “Technically: LightGBM quantiles + spend features + hierarchy reconcile.  
 > Operationally: 30/60/90 planning, budget what-ifs, explainable ranges.  
-> Submission: one command — `./run.sh ./data ./pickle/model.pkl ./output/predictions.csv`.”
+> Score path: one command — `./run.sh ./data ./pickle/model.pkl ./output/predictions.csv`.”
 
 ---
 
@@ -77,4 +77,4 @@ Show: repo layout + `run.sh` (scoring) vs Streamlit (prototype).
 3. Model + holdout metrics  
 4. Demo screenshots / live  
 5. Limitations & assumptions  
-6. Submission command  
+6. Scoring command  

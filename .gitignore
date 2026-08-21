@@ -37,5 +37,5 @@ _listing*.txt
 .DS_Store
 Thumbs.db
 
-# Do NOT ignore pickle/model.pkl — scorers clone the trained artifact
+# Do NOT ignore pickle/model.pkl — the scoring CLI loads the trained artifact
 # !pickle/model.pkl

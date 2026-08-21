@@ -18,6 +18,6 @@ jobs:
       - name: Score path dry-run
         run: |
           bash run.sh ./data ./pickle/model.pkl ./output/predictions.csv
-          python src/verify_submission.py
+          python src/verify_output.py
       - name: Smoke tests
         run: python -m pytest tests/test_smoke.py -q

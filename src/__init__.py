@@ -1,1 +1,1 @@
-"""AIgnition probabilistic revenue forecasting package."""
+"""Revenue Foresight — probabilistic revenue forecasting package."""

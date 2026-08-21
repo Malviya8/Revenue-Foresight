@@ -19,7 +19,7 @@ Written fresh every run (never appended).
 | `p10_revenue` / `p50_revenue` / `p90_revenue` | Probabilistic revenue |
 | `p10_roas` / `p50_roas` / `p90_roas` | `revenue / assumed_spend` |
 
-**Note:** Confirm with organizers if the official scored schema differs.
+**Note:** This is the scored CSV schema used by `run.sh` / `run.ps1`.
 
 ## Hierarchy reconciliation
 

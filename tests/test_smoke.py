@@ -1,4 +1,4 @@
-"""Smoke tests for submission contract and prediction invariants."""
+"""Smoke tests for the output contract and prediction invariants."""
 
 from __future__ import annotations
 
@@ -22,7 +22,7 @@ from schema import (  # noqa: E402
     PREDICTION_COLUMNS,
     UNIFIED_COLUMNS,
 )
-from verify_submission import check_predictions, check_repo  # noqa: E402
+from verify_output import check_predictions, check_repo  # noqa: E402
 
 
 def test_repo_contract() -> None:

@@ -1,5 +1,5 @@
 """
-Canonical schema contract for AIgnition Forecasting.
+Canonical schema contract for Revenue Foresight.
 
 All channels are normalized into UNIFIED_COLUMNS before feature generation.
 Raw platform column names differ; CHANNEL_FILE_PATTERNS + CHANNEL_MAPPINGS
@@ -225,9 +225,7 @@ TARGET_COLUMNS: list[str] = [
 
 
 # ---------------------------------------------------------------------------
-# Provisional scored output schema
-# Confirm with organizers if official launch columns differ — wrong format
-# scores zero. This is our internal target until overridden.
+# Scored output schema (see docs/output_contract.md).
 # ---------------------------------------------------------------------------
 
 PREDICTION_COLUMNS: list[str] = [
