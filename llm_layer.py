@@ -15,6 +15,18 @@ from typing import Any
 
 import pandas as pd
 
+# Display names only. The context JSON keeps the raw channel codes.
+_CHANNEL_LABELS = {
+    "google": "Google Ads",
+    "meta": "Meta Ads",
+    "bing": "Microsoft Ads",
+}
+
+
+def _label(channel: Any) -> str:
+    code = str(channel).lower()
+    return _CHANNEL_LABELS.get(code, str(channel).title())
+
 
 def build_insight_context(
     panel: pd.DataFrame,
@@ -168,7 +180,7 @@ def heuristic_insights(ctx: dict[str, Any]) -> str:
     ]
     for ch in ctx.get("channels", []):
         lines.append(
-            f"- **{ch['channel']}**: spend ${ch['assumed_spend']:,.0f} → "
+            f"- **{_label(ch['channel'])}**: spend ${ch['assumed_spend']:,.0f} → "
             f"P50 ${ch['p50_revenue']:,.0f} @ ROAS {ch['p50_roas']:.2f} "
             f"(range ${ch['p10_revenue']:,.0f}–${ch['p90_revenue']:,.0f})."
         )
@@ -190,7 +202,7 @@ def heuristic_insights(ctx: dict[str, Any]) -> str:
         for ch in ctx.get("channels", []):
             if "revenue_delta_pct" in ch:
                 lines.append(
-                    f"- {ch['channel']}: spend {ch.get('spend_delta_pct', 0):+.1f}% → "
+                    f"- {_label(ch['channel'])}: spend {ch.get('spend_delta_pct', 0):+.1f}% → "
                     f"revenue {ch['revenue_delta_pct']:+.1f}% "
                     f"(ROAS {ch['p50_roas']:.2f} → {ch.get('scenario_p50_roas', ch['p50_roas']):.2f})."
                 )
@@ -198,7 +210,7 @@ def heuristic_insights(ctx: dict[str, Any]) -> str:
                     "spend_delta_pct", 0
                 ):
                     lines.append(
-                        f"  - Interpretation: **diminishing returns** on {ch['channel']} — "
+                        f"  - Interpretation: **diminishing returns** on {_label(ch['channel'])} — "
                         f"incremental spend is not matching baseline efficiency."
                     )
 
@@ -206,15 +218,21 @@ def heuristic_insights(ctx: dict[str, Any]) -> str:
         lines += ["", "### Recent anomalies (z≥2 on 28d ROAS)"]
         for a in ctx["anomalies"]:
             lines.append(
-                f"- {a['channel']}: z={a['z_score']} (last {a['last']} vs mean {a['mean']})"
+                f"- {_label(a['channel'])}: z={a['z_score']} "
+                f"(last {a['last']} vs mean {a['mean']})"
             )
 
     if ctx.get("top_uncertain_campaigns"):
-        lines += ["", "### Uncertainty concentration"]
+        lines += [
+            "",
+            "### Where the range is widest",
+            "Campaign-level intervals this wide are not decision-grade — plan at channel level.",
+        ]
         for c in ctx["top_uncertain_campaigns"][:3]:
+            width = float(c.get("width_rel", 0))
             lines.append(
-                f"- {c.get('channel')} / {c.get('campaign_name')}: "
-                f"width/P50={float(c.get('width_rel', 0)):.2f}"
+                f"- {_label(c.get('channel'))} / {c.get('campaign_name')}: "
+                f"P10–P90 span is **{width:,.0f}×** its P50"
             )
 
     lines += [

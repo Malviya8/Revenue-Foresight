@@ -28,7 +28,11 @@ if str(ROOT) not in sys.path:
 from budget import apply_budget_scenario  # noqa: E402
 from features import build_inference_features  # noqa: E402
 from ingest import load_cleaned_panel  # noqa: E402
-from llm_layer import build_insight_context, generate_insights  # noqa: E402
+from llm_layer import (  # noqa: E402
+    build_insight_context,
+    generate_insights,
+    heuristic_insights,
+)
 from predict import predict_frame  # noqa: E402
 from validate import validate_panel  # noqa: E402
 
@@ -116,6 +120,7 @@ st.markdown(
       #MainMenu { visibility: hidden; }
       .stAppDeployButton, .stDeployButton, [data-testid="stToolbar"] { display: none !important; }
       [data-testid="stDecoration"] { display: none; }
+      [data-testid="manage-app-button"] { display: none !important; }
 
       iframe[height="0"] {
         position: absolute !important;
@@ -234,6 +239,9 @@ st.markdown(
         line-height: 1.25; font-weight: 650 !important; max-width: 34rem;
       }
       .rf-lede { margin: 0; color: #B4B4B4; font-size: 0.98rem; line-height: 1.55; max-width: 40rem; }
+      .rf-hero.rf-compact { padding: 1.15rem 1.75rem 1.1rem; margin-bottom: 1.35rem; }
+      .rf-hero.rf-compact h1 { font-size: 1.32rem !important; margin-bottom: 0; max-width: 40rem; }
+      .rf-hero.rf-compact .rf-status { margin-top: 0.95rem; padding-top: 0.8rem; }
       .rf-status {
         display: flex; flex-wrap: wrap; align-items: center; gap: 0.55rem 0.7rem;
         margin-top: 1.3rem; padding: 1rem 0 0;
@@ -314,14 +322,23 @@ st.markdown(
         .rf-landing-stats { grid-template-columns: 1fr 1fr; }
         .rf-landing-stats .rf-card:last-child { grid-column: 1 / -1; }
         .rf-steps { grid-template-columns: 1fr; margin-bottom: 1.1rem; }
+        .rf-hero.rf-compact { padding: 1rem 1.1rem 0.95rem; }
+        .rf-hero.rf-compact h1 { font-size: 1.14rem !important; }
         .stTabs [data-baseweb="tab-list"] {
-          gap: 0.85rem; overflow-x: auto; flex-wrap: nowrap;
+          gap: 0.5rem; overflow-x: auto; flex-wrap: nowrap;
+          padding-right: 0; scrollbar-width: none;
           -webkit-overflow-scrolling: touch;
+          /* If a label still overflows, fade it so it reads as scrollable, not broken. */
+          mask-image: linear-gradient(to right, #000 97%, transparent 100%);
+          -webkit-mask-image: linear-gradient(to right, #000 97%, transparent 100%);
         }
+        .stTabs [data-baseweb="tab-list"]::-webkit-scrollbar { display: none; }
         .stTabs [data-baseweb="tab"] {
-          font-size: 0.86rem; padding: 0.55rem 0 0.8rem; white-space: nowrap;
+          font-size: 0.78rem; padding: 0.55rem 0 0.8rem;
+          white-space: nowrap; flex: 0 0 auto;
         }
         div[data-testid="stMetricValue"] { font-size: 1.18rem; }
+        div[data-testid="stMetricLabel"] p { font-size: 0.76rem; }
         [data-testid="stSidebarCollapsedControl"] {
           top: 0.55rem !important;
           left: 0.55rem !important;
@@ -331,6 +348,14 @@ st.markdown(
           font-size: 1.02rem;
         }
         .stApp { overflow-x: hidden; }
+      }
+      @media (max-width: 1200px) {
+        /* Streamlit Cloud floating badges sit bottom-right; keep content clear of them. */
+        .block-container { padding-bottom: 5.5rem !important; }
+      }
+      @media (max-width: 380px) {
+        .stTabs [data-baseweb="tab"] { font-size: 0.72rem; }
+        .rf-landing-stats { grid-template-columns: 1fr; }
       }
       @media (max-width: 900px) and (min-width: 769px) {
         .rf-steps, .rf-landing-stats { grid-template-columns: 1fr; }
@@ -402,7 +427,7 @@ _NAV_JS = r"""
     win.setTimeout(hydrate, 1600);
   }
 
-  if (cmd === "close") {
+  if (cmd === "close" && isMobile()) {
     doc.documentElement.classList.add("rf-force-close");
     collapse();
     win.setTimeout(collapse, 60);
@@ -486,6 +511,17 @@ def _channel_name(code: str) -> str:
     return CHANNEL_LABELS.get(str(code).lower(), str(code).title())
 
 
+def _ordered_channels(codes) -> list[str]:
+    """Google, Meta, Microsoft first so tables and charts never disagree."""
+    present = [str(c).lower() for c in codes]
+    known = [c for c in CHANNEL_LABELS if c in present]
+    return known + sorted(c for c in present if c not in CHANNEL_LABELS)
+
+
+def _is_baseline_mix(multipliers: dict[str, float]) -> bool:
+    return all(abs(float(v) - 1.0) <= 1e-9 for v in multipliers.values())
+
+
 def _plotly_theme(fig: go.Figure, *, height: int = 320, y_title: str = "") -> go.Figure:
     fig.update_layout(
         height=height,
@@ -512,35 +548,105 @@ def _plotly_theme(fig: go.Figure, *, height: int = 320, y_title: str = "") -> go
     return fig
 
 
+def _band_chart(p10: float, p50: float, p90: float, horizon: int) -> go.Figure:
+    """Horizontal P10–P90 band with the P50 marked, for the no-scenario view."""
+    fig = go.Figure()
+    fig.add_bar(
+        x=[p90 - p10],
+        base=[p10],
+        y=["Planning band"],
+        orientation="h",
+        width=0.34,
+        marker=dict(color="rgba(255,106,61,0.22)", line=dict(color=ORANGE_SOFT, width=1)),
+        hovertemplate=f"P10 {_fmt_money(p10)} → P90 {_fmt_money(p90)}<extra></extra>",
+        showlegend=False,
+    )
+    fig.add_scatter(
+        x=[p50],
+        y=["Planning band"],
+        mode="markers",
+        marker=dict(color=ORANGE, size=34, symbol="line-ns", line=dict(color=ORANGE, width=5)),
+        hovertemplate=f"P50 {_fmt_money(p50)}<extra></extra>",
+        showlegend=False,
+    )
+    for value, label, color in (
+        (p10, f"P10 {_fmt_money(p10)}", MUTED),
+        (p50, f"P50 {_fmt_money(p50)}", "#F4F4F4"),
+        (p90, f"P90 {_fmt_money(p90)}", MUTED),
+    ):
+        fig.add_annotation(
+            x=value,
+            y="Planning band",
+            yshift=42 if label.startswith("P50") else -42,
+            text=label,
+            showarrow=False,
+            font=dict(size=13, color=color, family="DM Sans, sans-serif"),
+        )
+    span = max(p90 - p10, 1.0)
+    fig.update_layout(
+        height=230,
+        margin=dict(l=16, r=16, t=34, b=52),
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        font=dict(color=WHITE, family="DM Sans, sans-serif", size=13),
+        bargap=0.6,
+    )
+    fig.update_yaxes(showticklabels=False, showgrid=False, zeroline=False)
+    fig.update_xaxes(
+        range=[p10 - span * 0.35, p90 + span * 0.35],
+        gridcolor="#242424",
+        zeroline=False,
+        color=MUTED,
+        tickprefix="$",
+        tickformat="~s",
+        title=dict(
+            text=f"Forecasted revenue (USD) · next {horizon} days",
+            font=dict(size=12, color=MUTED),
+        ),
+    )
+    return fig
+
+
 def _hero(*, horizon: int | None = None, multipliers: dict[str, float] | None = None) -> None:
-    if horizon is not None and multipliers is not None:
-        chips = "".join(
-            f'<span class="rf-chip">{_channel_name(k)} {v:.2f}×</span>'
-            for k, v in multipliers.items()
+    """Full hero on the landing; a compact status band once a forecast exists."""
+    if horizon is None or multipliers is None:
+        st.markdown(
+            """
+            <div class="rf-hero">
+              <p class="rf-kicker">Revenue Foresight</p>
+              <h1>See the next 30–90 days before you spend.</h1>
+              <p class="rf-lede">Probabilistic revenue and ROAS across Google, Meta, and Microsoft Ads — a likely number, plus a cautious and optimistic range.</p>
+              <div class="rf-status">
+                <span class="rf-chip">Google Ads</span>
+                <span class="rf-chip">Meta Ads</span>
+                <span class="rf-chip">Microsoft Ads</span>
+                <span class="rf-chip"><em>P10–P50–P90</em></span>
+                <span class="rf-chip">30 / 60 / 90 days</span>
+              </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
         )
-        status = (
-            f'<div class="rf-status">'
-            f'<span class="rf-chip"><em>{horizon}-day</em> outlook</span>'
-            f"{chips}"
-            f"</div>"
-        )
+        return
+
+    if _is_baseline_mix(multipliers):
+        mix = '<span class="rf-chip">Current spend mix</span>'
     else:
-        status = (
-            '<div class="rf-status">'
-            '<span class="rf-chip">Google Ads</span>'
-            '<span class="rf-chip">Meta Ads</span>'
-            '<span class="rf-chip">Microsoft Ads</span>'
-            '<span class="rf-chip"><em>P10–P50–P90</em></span>'
-            '<span class="rf-chip">30 / 60 / 90 days</span>'
-            "</div>"
+        mix = "".join(
+            f'<span class="rf-chip">{_channel_name(code)} '
+            f'<em>{float(multipliers[code]):.2f}×</em></span>'
+            for code in _ordered_channels(multipliers)
+            if abs(float(multipliers[code]) - 1.0) > 1e-9
         )
     st.markdown(
         f"""
-        <div class="rf-hero">
+        <div class="rf-hero rf-compact">
           <p class="rf-kicker">Revenue Foresight</p>
-          <h1>See the next 30–90 days before you spend.</h1>
-          <p class="rf-lede">Probabilistic revenue and ROAS across Google, Meta, and Microsoft Ads — a likely number, plus a cautious and optimistic range.</p>
-          {status}
+          <h1>The next {horizon} days, before you spend.</h1>
+          <div class="rf-status">
+            <span class="rf-chip"><em>{horizon}-day</em> outlook</span>
+            {mix}
+          </div>
         </div>
         """,
         unsafe_allow_html=True,
@@ -553,62 +659,31 @@ def _issue_title(issue) -> tuple[str, str]:
 
 
 def _render_empty_state(data_dir: str) -> None:
-    cards = [
-        ("Channels", "3", "Google, Meta, and Microsoft Ads in one outlook."),
-        ("Horizon", "30–90d", "Pick the window in Plan, then score both mixes."),
-        ("Range", "P10–P90", "Cautious floor, likely number, optimistic ceiling."),
-    ]
+    """Fallback view when no forecast exists yet (or scoring failed)."""
     try:
         _panel, qa = _load_panel(data_dir)
         inv = qa.inventory.get("channels", {}) if qa else {}
-        if inv:
-            cards[0] = (
-                "Channels loaded",
-                str(len(inv)),
-                " · ".join(_channel_name(ch) for ch in inv),
-            )
     except Exception:
         inv = {}
-
-    stats = "".join(
-        f'<div class="rf-card"><h4>{title}</h4><p class="rf-big">{big}</p>'
-        f'<p class="rf-muted">{note}</p></div>'
-        for title, big, note in cards
-    )
-    st.markdown(f'<div class="rf-landing-stats">{stats}</div>', unsafe_allow_html=True)
-
-    st.markdown(
-        """
-        <div class="rf-steps">
-          <div class="rf-step"><span>1 · PLAN</span><h4>Keep spend as-is, or try a what-if</h4>
-          <p class="rf-muted">Open Plan to move a slider. 1.00 is today’s mix. 1.20 means +20% on that channel.</p></div>
-          <div class="rf-step"><span>2 · FORECAST</span><h4>Run the outlook</h4>
-          <p class="rf-muted">We score a baseline and your scenario together. No retraining, no network.</p></div>
-          <div class="rf-step"><span>3 · DECIDE</span><h4>Compare range, channels, campaigns</h4>
-          <p class="rf-muted">P50 is the most likely outcome. P10–P90 is the planning band.</p></div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
 
     if inv:
         snaps = "".join(
             (
                 '<div class="rf-card">'
-                f'<p class="rf-kicker">{_channel_name(ch)}</p>'
-                f'<p class="rf-big">{int(stats_row["campaigns"])} campaigns</p>'
+                f'<p class="rf-kicker">{_channel_name(code)}</p>'
+                f'<p class="rf-big">{int(inv[code]["campaigns"])} campaigns</p>'
                 '<p class="rf-muted">'
-                f'Historic ROAS <span class="rf-orange">{stats_row["blended_roas"]:.2f}</span>'
-                f' · {100.0 - float(stats_row.get("sparsity_pct", 0)):.0f}% active days'
+                f'Historic ROAS <span class="rf-orange">{inv[code]["blended_roas"]:.2f}</span>'
+                f' · {100.0 - float(inv[code].get("sparsity_pct", 0)):.0f}% active days'
                 "</p></div>"
             )
-            for ch, stats_row in inv.items()
+            for code in _ordered_channels(inv)
         )
         st.markdown(f'<div class="rf-landing-stats">{snaps}</div>', unsafe_allow_html=True)
 
     st.markdown(
-        '<p class="rf-cta-note">Sample exports are already selected. Tap <span class="rf-orange">Plan</span> '
-        "at the top left to change the mix, or run the default outlook now.</p>",
+        '<p class="rf-cta-note">Sample exports are already loaded. Open '
+        '<span class="rf-orange">Plan</span> to change the horizon or spend mix.</p>',
         unsafe_allow_html=True,
     )
     st.button(
@@ -656,8 +731,10 @@ def _render_qa(qa) -> None:
 
     if inv:
         st.markdown("##### How complete is each channel?")
-        cols = st.columns(len(inv))
-        for col, (ch, stats) in zip(cols, inv.items()):
+        codes = _ordered_channels(inv)
+        cols = st.columns(len(codes))
+        for col, ch in zip(cols, codes):
+            stats = inv[ch]
             active = 100.0 - float(stats.get("sparsity_pct", 0))
             with col:
                 st.markdown(
@@ -718,146 +795,211 @@ def _render_qa(qa) -> None:
             st.markdown("  \n".join(bits))
 
 
-def _render_forecast(h: int, agg_b, agg_s) -> None:
+def _render_forecast(h: int, agg_b, agg_s, *, whatif: bool) -> None:
     st.subheader(f"What the next {h} days look like")
-    st.caption("P50 is the most likely outcome. P10 is a cautious floor. P90 is an optimistic ceiling. Spend changes in the sidebar update the what-if column.")
-
-    c1, c2, c3, c4 = st.columns(4)
-    c1.metric("Likely revenue · current plan", _fmt_money(float(agg_b["p50_revenue"])))
-    c2.metric(
-        "Likely revenue · what-if",
-        _fmt_money(float(agg_s["p50_revenue"])),
-        delta=f"{100 * (float(agg_s['p50_revenue']) / max(float(agg_b['p50_revenue']), 1) - 1):+.1f}%",
-    )
-    c3.metric("Likely ROAS · current plan", f"{float(agg_b['p50_roas']):.2f}")
-    c4.metric(
-        "Likely ROAS · what-if",
-        f"{float(agg_s['p50_roas']):.2f}",
-        delta=f"{float(agg_s['p50_roas']) - float(agg_b['p50_roas']):+.2f}",
-    )
-
-    r1, r2, r3 = st.columns(3)
-    with r1:
-        st.markdown(
-            f'<div class="rf-card"><h4>Cautious (P10)</h4><p class="rf-big">{_fmt_money(float(agg_s["p10_revenue"]))}</p>'
-            f'<p class="rf-muted">Downside if the period is weak. What-if spend {_fmt_money(float(agg_s["assumed_spend"]))}.</p></div>',
-            unsafe_allow_html=True,
+    if whatif:
+        st.caption(
+            "P50 is the most likely outcome. P10 is a cautious floor. P90 is an optimistic ceiling. "
+            "The what-if column reflects the spend mix set in **Plan**."
         )
-    with r2:
-        st.markdown(
-            f'<div class="rf-card"><h4>Most likely (P50)</h4><p class="rf-big">{_fmt_money(float(agg_s["p50_revenue"]))}</p>'
-            f'<p class="rf-muted">Planning number. Current plan was {_fmt_money(float(agg_b["p50_revenue"]))}.</p></div>',
-            unsafe_allow_html=True,
-        )
-    with r3:
-        st.markdown(
-            f'<div class="rf-card"><h4>Optimistic (P90)</h4><p class="rf-big">{_fmt_money(float(agg_s["p90_revenue"]))}</p>'
-            f'<p class="rf-muted">Upside if the period is strong. Not a target — a ceiling.</p></div>',
-            unsafe_allow_html=True,
+    else:
+        st.caption(
+            "P50 is the most likely outcome. P10 is a cautious floor. P90 is an optimistic ceiling. "
+            "Move a spend slider in **Plan** to compare a what-if against this baseline."
         )
 
-    fig = go.Figure()
     hover = " %{y:$,.0f}<extra>%{fullData.name}</extra>"
-    fig.add_bar(
-        name="Cautious (P10)",
-        x=["Current plan", "What-if"],
-        y=[float(agg_b["p10_revenue"]), float(agg_s["p10_revenue"])],
-        marker_color="#4A4A4A",
-        hovertemplate=hover,
-    )
-    fig.add_bar(
-        name="Likely (P50)",
-        x=["Current plan", "What-if"],
-        y=[float(agg_b["p50_revenue"]), float(agg_s["p50_revenue"])],
-        marker_color=ORANGE,
-        hovertemplate=hover,
-    )
-    fig.add_bar(
-        name="Optimistic (P90)",
-        x=["Current plan", "What-if"],
-        y=[float(agg_b["p90_revenue"]), float(agg_s["p90_revenue"])],
-        marker_color=ORANGE_SOFT,
-        hovertemplate=hover,
-    )
-    st.plotly_chart(
-        _plotly_theme(
-            fig,
-            height=380,
-            y_title=f"Forecasted revenue (USD) · next {h} days",
-        ),
-        use_container_width=True,
-    )
-    st.caption(
-        "Y-axis is **store-level attributed revenue**, not spend and not ROAS. "
-        "A 1.25× Google spend slider does not lift total revenue by 25% — only Google’s share of the mix changes, and returns diminish."
-    )
+
+    if whatif:
+        c1, c2, c3, c4 = st.columns(4)
+        c1.metric("Likely revenue · current plan", _fmt_money(float(agg_b["p50_revenue"])))
+        c2.metric(
+            "Likely revenue · what-if",
+            _fmt_money(float(agg_s["p50_revenue"])),
+            delta=f"{100 * (float(agg_s['p50_revenue']) / max(float(agg_b['p50_revenue']), 1) - 1):+.1f}%",
+        )
+        c3.metric("Likely ROAS · current plan", f"{float(agg_b['p50_roas']):.2f}")
+        c4.metric(
+            "Likely ROAS · what-if",
+            f"{float(agg_s['p50_roas']):.2f}",
+            delta=f"{float(agg_s['p50_roas']) - float(agg_b['p50_roas']):+.2f}",
+        )
+
+        r1, r2, r3 = st.columns(3)
+        with r1:
+            st.markdown(
+                f'<div class="rf-card"><h4>Cautious (P10)</h4><p class="rf-big">{_fmt_money(float(agg_s["p10_revenue"]))}</p>'
+                f'<p class="rf-muted">Downside if the period is weak. What-if spend {_fmt_money(float(agg_s["assumed_spend"]))}.</p></div>',
+                unsafe_allow_html=True,
+            )
+        with r2:
+            st.markdown(
+                f'<div class="rf-card"><h4>Most likely (P50)</h4><p class="rf-big">{_fmt_money(float(agg_s["p50_revenue"]))}</p>'
+                f'<p class="rf-muted">Planning number. Current plan was {_fmt_money(float(agg_b["p50_revenue"]))}.</p></div>',
+                unsafe_allow_html=True,
+            )
+        with r3:
+            st.markdown(
+                f'<div class="rf-card"><h4>Optimistic (P90)</h4><p class="rf-big">{_fmt_money(float(agg_s["p90_revenue"]))}</p>'
+                f'<p class="rf-muted">Upside if the period is strong. Not a target — a ceiling.</p></div>',
+                unsafe_allow_html=True,
+            )
+
+        fig = go.Figure()
+        for name, key, color in (
+            ("Cautious (P10)", "p10_revenue", "#6A6A6A"),
+            ("Likely (P50)", "p50_revenue", ORANGE),
+            ("Optimistic (P90)", "p90_revenue", ORANGE_SOFT),
+        ):
+            fig.add_bar(
+                name=name,
+                x=["Current plan", "What-if"],
+                y=[float(agg_b[key]), float(agg_s[key])],
+                marker_color=color,
+                hovertemplate=hover,
+            )
+    else:
+        p10 = float(agg_b["p10_revenue"])
+        p50 = float(agg_b["p50_revenue"])
+        p90 = float(agg_b["p90_revenue"])
+        c1, c2, c3 = st.columns(3)
+        c1.metric("Likely revenue (P50)", _fmt_money(p50))
+        c2.metric("Planning band (P10–P90)", f"{_fmt_money(p10)} – {_fmt_money(p90)}")
+        c3.metric("Likely ROAS", f"{float(agg_b['p50_roas']):.2f}")
+        st.caption(
+            f"On assumed spend of {_fmt_money(float(agg_b['assumed_spend']))}. "
+            "Plan on P50, stress-test with P10, and treat P90 as a ceiling rather than a target."
+        )
+
+        st.plotly_chart(
+            _band_chart(p10, p50, p90, h),
+            use_container_width=True,
+        )
+
+    if whatif:
+        st.plotly_chart(
+            _plotly_theme(
+                fig,
+                height=380,
+                y_title=f"Forecasted revenue (USD) · next {h} days",
+            ),
+            use_container_width=True,
+        )
+        st.caption(
+            "Y-axis is **store-level attributed revenue**, not spend and not ROAS. "
+            "A 1.25× Google spend slider does not lift total revenue by 25% — only Google’s share of the mix changes, and returns diminish."
+        )
+    else:
+        st.caption(
+            "The bar is **store-level attributed revenue**, not spend and not ROAS. "
+            "The shaded span is the P10–P90 planning band; the line is P50."
+        )
 
     st.download_button(
-        "Download this what-if as CSV",
+        "Download this forecast as CSV" if not whatif else "Download this what-if as CSV",
         data=st.session_state.scenario.to_csv(index=False).encode("utf-8"),
-        file_name=f"predictions_h{h}_scenario.csv",
+        file_name=f"predictions_h{h}_{'baseline' if not whatif else 'scenario'}.csv",
         mime="text/csv",
     )
 
 
-def _channel_table(b_h: pd.DataFrame, s_h: pd.DataFrame) -> pd.DataFrame:
-    ch = b_h[b_h["level"] == "channel"][
-        ["channel", "assumed_spend", "p10_revenue", "p50_revenue", "p90_revenue", "p50_roas"]
-    ].copy()
-    chs = s_h[s_h["level"] == "channel"][
-        ["channel", "assumed_spend", "p10_revenue", "p50_revenue", "p90_revenue", "p50_roas"]
-    ].copy()
-    ch["channel"] = ch["channel"].map(_channel_name)
-    chs["channel"] = chs["channel"].map(_channel_name)
-    merged = ch.merge(chs, on="channel", suffixes=("_now", "_whatif"))
-    out = pd.DataFrame(
+def _channel_table(
+    base_ch: pd.DataFrame, scen_ch: pd.DataFrame, *, whatif: bool
+) -> pd.DataFrame:
+    labels = [_channel_name(c) for c in base_ch.index]
+    if not whatif:
+        return pd.DataFrame(
+            {
+                "Channel": labels,
+                "Assumed spend": base_ch["assumed_spend"].to_numpy(),
+                "Low (P10)": base_ch["p10_revenue"].to_numpy(),
+                "Likely (P50)": base_ch["p50_revenue"].to_numpy(),
+                "High (P90)": base_ch["p90_revenue"].to_numpy(),
+                "Likely ROAS": base_ch["p50_roas"].to_numpy(),
+            }
+        )
+    now = base_ch["p50_revenue"].to_numpy()
+    whatif_rev = scen_ch["p50_revenue"].to_numpy()
+    return pd.DataFrame(
         {
-            "Channel": merged["channel"],
-            "Spend now": merged["assumed_spend_now"],
-            "Spend what-if": merged["assumed_spend_whatif"],
-            "Likely revenue now": merged["p50_revenue_now"],
-            "Likely revenue what-if": merged["p50_revenue_whatif"],
-            "Low (P10) what-if": merged["p10_revenue_whatif"],
-            "High (P90) what-if": merged["p90_revenue_whatif"],
-            "ROAS now": merged["p50_roas_now"],
-            "ROAS what-if": merged["p50_roas_whatif"],
+            "Channel": labels,
+            "Spend now": base_ch["assumed_spend"].to_numpy(),
+            "Spend what-if": scen_ch["assumed_spend"].to_numpy(),
+            "Likely now": now,
+            "Likely what-if": whatif_rev,
+            "Change": [
+                (float(w) / float(n) - 1.0) if float(n) else 0.0
+                for n, w in zip(now, whatif_rev)
+            ],
+            "Band what-if (P10–P90)": [
+                f"{_fmt_money(float(lo))} – {_fmt_money(float(hi))}"
+                for lo, hi in zip(scen_ch["p10_revenue"], scen_ch["p90_revenue"])
+            ],
+            "ROAS what-if": scen_ch["p50_roas"].to_numpy(),
         }
     )
-    return out
 
 
-def _render_channels(b_h: pd.DataFrame, s_h: pd.DataFrame) -> None:
+def _render_channels(b_h: pd.DataFrame, s_h: pd.DataFrame, *, whatif: bool) -> None:
     st.subheader("Where the revenue comes from")
     st.caption("Channel totals are the planning layer. They always add up to the store-level number.")
-    table = _channel_table(b_h, s_h)
-    money_cols = [c for c in table.columns if c not in ("Channel", "ROAS now", "ROAS what-if")]
-    config = {
-        col: st.column_config.NumberColumn(col, format="$%.0f")
-        for col in money_cols
-    }
-    config["ROAS now"] = st.column_config.NumberColumn("ROAS now", format="%.2f")
-    config["ROAS what-if"] = st.column_config.NumberColumn("ROAS what-if", format="%.2f")
-    st.dataframe(table, use_container_width=True, hide_index=True, column_config=config)
 
-    order = [c for c in ("google", "meta", "bing") if c in set(b_h.loc[b_h["level"] == "channel", "channel"])]
+    order = _ordered_channels(b_h.loc[b_h["level"] == "channel", "channel"].unique())
     base_ch = b_h[b_h["level"] == "channel"].set_index("channel").reindex(order)
     scen_ch = s_h[s_h["level"] == "channel"].set_index("channel").reindex(order)
+
+    table = _channel_table(base_ch, scen_ch, whatif=whatif)
+    config: dict[str, object] = {}
+    for col in table.columns:
+        if col in ("Channel", "Band what-if (P10–P90)"):
+            continue
+        if col == "Change":
+            config[col] = st.column_config.NumberColumn("Change", format="%+.1f%%")
+        elif "ROAS" in col:
+            config[col] = st.column_config.NumberColumn(col, format="%.2f")
+        else:
+            config[col] = st.column_config.NumberColumn(col, format="$%.0f")
+    if "Change" in table.columns:
+        table = table.assign(Change=table["Change"] * 100.0)
+    st.dataframe(table, use_container_width=True, hide_index=True, column_config=config)
+
     labels = [_channel_name(c) for c in order]
     fig = go.Figure()
-    fig.add_bar(
-        name="Current plan (P50)",
-        x=labels,
-        y=base_ch["p50_revenue"].tolist(),
-        marker_color="#4A4A4A",
-        hovertemplate=" %{y:$,.0f}<extra>Current plan</extra>",
-    )
-    fig.add_bar(
-        name="What-if (P50)",
-        x=labels,
-        y=scen_ch["p50_revenue"].tolist(),
-        marker_color=ORANGE,
-        hovertemplate=" %{y:$,.0f}<extra>What-if</extra>",
-    )
+    if whatif:
+        fig.add_bar(
+            name="Current plan (P50)",
+            x=labels,
+            y=base_ch["p50_revenue"].tolist(),
+            marker_color="#6A6A6A",
+            hovertemplate=" %{y:$,.0f}<extra>Current plan</extra>",
+        )
+        fig.add_bar(
+            name="What-if (P50)",
+            x=labels,
+            y=scen_ch["p50_revenue"].tolist(),
+            marker_color=ORANGE,
+            hovertemplate=" %{y:$,.0f}<extra>What-if</extra>",
+        )
+    else:
+        p50 = base_ch["p50_revenue"].astype(float)
+        fig.add_bar(
+            name="Likely (P50)",
+            x=labels,
+            y=p50.tolist(),
+            marker_color=ORANGE,
+            error_y=dict(
+                type="data",
+                symmetric=False,
+                array=(base_ch["p90_revenue"].astype(float) - p50).tolist(),
+                arrayminus=(p50 - base_ch["p10_revenue"].astype(float)).tolist(),
+                color=ORANGE_SOFT,
+                thickness=1.6,
+                width=18,
+            ),
+            hovertemplate=" %{y:$,.0f}<extra>Likely (P50)</extra>",
+        )
+        fig.update_layout(showlegend=False)
+
     st.plotly_chart(
         _plotly_theme(
             fig,
@@ -876,24 +1018,29 @@ def _render_campaigns(s_h: pd.DataFrame) -> None:
     st.subheader("Campaigns that move the number")
     st.caption("Use this to spot contributors and wide ranges. Sparse campaigns (often Bing) can look noisy — prefer channel totals for the decision.")
     channels = ["All channels"] + [
-        _channel_name(c) for c in sorted(s_h[s_h["level"] == "channel"]["channel"].unique().tolist())
+        _channel_name(c)
+        for c in _ordered_channels(s_h.loc[s_h["level"] == "channel", "channel"].unique())
     ]
-    pick = st.selectbox("Show", options=channels)
+    picker, _spacer = st.columns([1, 2])
+    with picker:
+        pick = st.selectbox("Show", options=channels)
     code = {v: k for k, v in CHANNEL_LABELS.items()}.get(pick)
 
     camps = s_h[s_h["level"] == "campaign"].copy()
     if code:
         camps = camps[camps["channel"] == code]
     camps = camps.sort_values("p50_revenue", ascending=False).head(40)
+    spend = camps["assumed_spend"].astype(float)
     show = pd.DataFrame(
         {
             "Campaign": camps["campaign_name"],
             "Channel": camps["channel"].map(_channel_name),
             "Type": camps["campaign_type"],
-            "Planned spend": camps["assumed_spend"],
+            "Planned spend": spend,
             "Low (P10)": camps["p10_revenue"],
             "Likely (P50)": camps["p50_revenue"],
             "High (P90)": camps["p90_revenue"],
+            "Cautious ROAS": camps["p10_revenue"].astype(float) / spend.where(spend > 0),
             "Likely ROAS": camps["p50_roas"],
         }
     )
@@ -901,8 +1048,14 @@ def _render_campaigns(s_h: pd.DataFrame) -> None:
         col: st.column_config.NumberColumn(col, format="$%.0f")
         for col in ("Planned spend", "Low (P10)", "Likely (P50)", "High (P90)")
     }
+    config["Cautious ROAS"] = st.column_config.NumberColumn("Cautious ROAS", format="%.2f")
     config["Likely ROAS"] = st.column_config.NumberColumn("Likely ROAS", format="%.2f")
     st.dataframe(show, use_container_width=True, hide_index=True, column_config=config)
+    st.caption(
+        "**Cautious ROAS** is the P10 revenue divided by planned spend. Where it sits near 1.00, "
+        "the cautious case for that campaign is roughly break-even — that is why some rows show a "
+        "Low (P10) close to their planned spend."
+    )
 
     types = s_h[s_h["level"] == "campaign_type"].copy()
     if code:
@@ -920,18 +1073,32 @@ def _render_campaigns(s_h: pd.DataFrame) -> None:
         st.plotly_chart(_plotly_theme(fig, height=300), use_container_width=True)
 
 
+def _insight_context(panel, baseline, scenario, qa, h, multipliers) -> dict:
+    mix = st.session_state.get("multipliers", multipliers)
+    return build_insight_context(
+        panel=panel,
+        baseline=baseline,
+        # A no-op scenario would only add "+0.00% vs baseline" noise to the briefing.
+        scenario=None if _is_baseline_mix(mix) else scenario,
+        qa_inventory=qa.inventory if qa else {},
+        horizon=h,
+        multipliers=mix,
+    )
+
+
+def _briefing_markdown(md: str) -> str:
+    """Streamlit reads $…$ as LaTeX, which mangles dollar amounts."""
+    return md.replace("$", r"\$")
+
+
 def _render_ai(panel, baseline, scenario, qa, h, multipliers, api_key, model_name, provider) -> None:
     st.subheader("Plain-language briefing")
-    st.caption("Optional. Grounded in the numbers above. If there is no API key, you still get an offline summary — never used by the scoring CLI.")
-    if st.button("Write the briefing", type="primary"):
-        ctx = build_insight_context(
-            panel=panel,
-            baseline=baseline,
-            scenario=scenario,
-            qa_inventory=qa.inventory if qa else {},
-            horizon=h,
-            multipliers=st.session_state.get("multipliers", multipliers),
-        )
+    st.caption(
+        "Written from the numbers above — nothing invented. The offline summary needs no API key; "
+        "an LLM only rephrases the same facts. The scoring CLI never calls out to a network."
+    )
+    if st.button("Rewrite with an LLM", type="primary"):
+        ctx = _insight_context(panel, baseline, scenario, qa, h, multipliers)
         with st.spinner("Drafting briefing..."):
             md, engine = generate_insights(
                 ctx,
@@ -941,8 +1108,9 @@ def _render_ai(panel, baseline, scenario, qa, h, multipliers, api_key, model_nam
             )
         st.session_state.insights_md = md
         st.session_state.insights_engine = engine
-        with st.expander("Numbers sent to the briefing (for trust)", expanded=False):
-            st.json(ctx)
+
+    with st.expander("Numbers behind this briefing (for trust)", expanded=False):
+        st.json(_insight_context(panel, baseline, scenario, qa, h, multipliers))
 
     if st.session_state.get("insights_md"):
         engine = st.session_state.get("insights_engine")
@@ -952,7 +1120,7 @@ def _render_ai(panel, baseline, scenario, qa, h, multipliers, api_key, model_nam
             "openai": "OpenAI",
         }.get(engine, engine)
         st.markdown(f'<span class="rf-pill ok">{label}</span>', unsafe_allow_html=True)
-        st.markdown(st.session_state.insights_md)
+        st.markdown(_briefing_markdown(st.session_state.insights_md))
 
 
 def main() -> None:
@@ -1013,6 +1181,18 @@ def main() -> None:
             data_dir = st.text_input("Data folder", value=str(ROOT / "data"))
             model_path = st.text_input("Model file", value=str(ROOT / "pickle" / "model.pkl"))
 
+    if "baseline" not in st.session_state:
+        st.session_state.baseline = None
+        st.session_state.scenario = None
+        st.session_state.panel = None
+        st.session_state.qa = None
+
+    # Land on real numbers instead of instructions: score the sample plan once on open.
+    if "rf_autorun" not in st.session_state:
+        st.session_state.rf_autorun = True
+        if st.session_state.baseline is None and phase is None:
+            phase = "score"
+
     if phase == "close":
         _close_sidebar_now()
         st.session_state["_forecast_phase"] = "score"
@@ -1022,25 +1202,32 @@ def main() -> None:
         st.session_state.rf_nav_booted = True
         _inject_nav("boot")
 
-    if "baseline" not in st.session_state:
-        st.session_state.baseline = None
-        st.session_state.scenario = None
-        st.session_state.panel = None
-        st.session_state.qa = None
-
     if phase == "score":
         st.session_state["_forecast_phase"] = None
-        with st.spinner("Scoring current plan and your what-if…"):
-            panel, qa = _load_panel(data_dir)
-            _model_path(model_path)
-            baseline = _run_forecast(panel, model_path, {"google": 1.0, "meta": 1.0, "bing": 1.0})
-            scenario = _run_forecast(panel, model_path, multipliers)
-            st.session_state.panel = panel
-            st.session_state.qa = qa
-            st.session_state.baseline = baseline
-            st.session_state.scenario = scenario
-            st.session_state.multipliers = multipliers
-            st.session_state.horizon = horizon
+        try:
+            with st.spinner("Scoring the current plan…"):
+                panel, qa = _load_panel(data_dir)
+                _model_path(model_path)
+                baseline = _run_forecast(
+                    panel, model_path, {"google": 1.0, "meta": 1.0, "bing": 1.0}
+                )
+                scenario = (
+                    baseline
+                    if _is_baseline_mix(multipliers)
+                    else _run_forecast(panel, model_path, multipliers)
+                )
+                st.session_state.panel = panel
+                st.session_state.qa = qa
+                st.session_state.baseline = baseline
+                st.session_state.scenario = scenario
+                st.session_state.multipliers = multipliers
+                st.session_state.horizon = horizon
+                st.session_state.insights_md = heuristic_insights(
+                    _insight_context(panel, baseline, scenario, qa, horizon, multipliers)
+                )
+                st.session_state.insights_engine = "heuristic"
+        except Exception as exc:  # surface a readable card instead of a raw traceback
+            st.session_state.forecast_error = str(exc)
 
     baseline = st.session_state.baseline
     scenario = st.session_state.scenario
@@ -1049,27 +1236,39 @@ def main() -> None:
 
     if baseline is None:
         _hero()
+        if st.session_state.get("forecast_error"):
+            st.error(
+                "Could not score this data folder: "
+                f"{st.session_state['forecast_error']}\n\n"
+                "Check the paths under **Plan → Advanced**."
+            )
         _render_empty_state(data_dir)
         if phase == "close":
             st.rerun()
         return
 
     h = horizon
+    scored = st.session_state.get("multipliers", multipliers)
+    whatif = not _is_baseline_mix(scored)
     b_h = baseline[baseline["horizon_days"] == h]
     s_h = scenario[scenario["horizon_days"] == h]
     agg_b = b_h[b_h["level"] == "aggregate"].iloc[0]
     agg_s = s_h[s_h["level"] == "aggregate"].iloc[0]
 
-    _hero(horizon=h, multipliers=multipliers)
+    _hero(horizon=h, multipliers=scored)
+
+    # Horizon re-filters instantly; a new spend mix has to be scored.
+    if any(abs(float(multipliers[k]) - float(scored.get(k, 1.0))) > 1e-9 for k in multipliers):
+        st.warning("Spend sliders changed. Click **Run forecast** to score the new mix.", icon="⚠️")
 
     tab_forecast, tab_channels, tab_campaigns, tab_qa, tab_ai = st.tabs(
         ["Outlook", "Channels", "Campaigns", "Data check", "Briefing"]
     )
 
     with tab_forecast:
-        _render_forecast(h, agg_b, agg_s)
+        _render_forecast(h, agg_b, agg_s, whatif=whatif)
     with tab_channels:
-        _render_channels(b_h, s_h)
+        _render_channels(b_h, s_h, whatif=whatif)
     with tab_campaigns:
         _render_campaigns(s_h)
     with tab_qa:
