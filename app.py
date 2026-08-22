@@ -16,6 +16,7 @@ from pathlib import Path
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
+import streamlit.components.v1 as components
 
 ROOT = Path(__file__).resolve().parent
 SRC = ROOT / "src"
@@ -106,10 +107,32 @@ st.markdown(
       }
       .block-container { padding-top: 2.25rem; padding-bottom: 3.5rem; max-width: 1120px; }
 
-      header[data-testid="stHeader"] { display: none !important; }
+      header[data-testid="stHeader"] {
+        background: transparent !important;
+        border: none !important;
+        height: 0 !important;
+        min-height: 0 !important;
+      }
       #MainMenu { visibility: hidden; }
       .stAppDeployButton, .stDeployButton, [data-testid="stToolbar"] { display: none !important; }
       [data-testid="stDecoration"] { display: none; }
+
+      iframe[height="0"] {
+        position: absolute !important;
+        left: -9999px !important;
+        width: 0 !important;
+        height: 0 !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+        border: 0 !important;
+      }
+      div[data-testid="stIFrame"]:has(iframe[height="0"]),
+      .stElementContainer:has(iframe[height="0"]) {
+        height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: hidden !important;
+      }
 
       .stSpinner, [data-testid="stSpinner"] {
         padding: 0.45rem 0 0.7rem;
@@ -136,8 +159,35 @@ st.markdown(
       [data-testid="stSidebar"] {
         background: #111111;
         border-right: 1px solid #242424;
+        transition: transform 0.45s cubic-bezier(0.32, 0.72, 0, 1),
+                    min-width 0.45s cubic-bezier(0.32, 0.72, 0, 1),
+                    max-width 0.45s cubic-bezier(0.32, 0.72, 0, 1) !important;
       }
-      [data-testid="stSidebar"] .block-container { padding-top: 1.5rem; }
+      [data-testid="stSidebar"] .block-container { padding-top: 1.15rem; }
+
+      [data-testid="stSidebarCollapsedControl"] {
+        display: flex !important;
+        align-items: center !important;
+        gap: 0.05rem;
+        top: 0.7rem !important;
+        left: 0.7rem !important;
+        z-index: 1000002 !important;
+        background: #161616 !important;
+        border: 1px solid #2E2E2E !important;
+        border-radius: 12px !important;
+        padding: 0.12rem 0.75rem 0.12rem 0.12rem !important;
+        box-shadow: 0 10px 28px rgba(0,0,0,0.38) !important;
+      }
+      [data-testid="stSidebarCollapsedControl"]::after {
+        content: "Plan";
+        color: #FF8A66;
+        font-family: "DM Sans", sans-serif;
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        padding-right: 0.15rem;
+      }
 
       .stButton > button[kind="primary"] {
         background: #FF6A3D; color: #0C0C0C; border: 0; font-weight: 700;
@@ -226,15 +276,179 @@ st.markdown(
       .rf-steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.9rem; margin: 0 0 1.4rem; }
       .rf-step { background: #161616; border: 1px solid #2A2A2A; border-radius: 14px; padding: 1.05rem 1.1rem; }
       .rf-step span { color: #FF8A66; font-weight: 700; font-size: 0.72rem; letter-spacing: 0.1em; }
+      .rf-step h4 { margin: 0.35rem 0 0.35rem; font-size: 1.02rem !important; }
 
-      @media (max-width: 900px) {
-        .rf-steps { grid-template-columns: 1fr; }
+      .rf-landing-stats {
+        display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.9rem; margin: 0 0 1.25rem;
+      }
+      .rf-cta-note { color: #9A9A9A; font-size: 0.9rem; line-height: 1.5; margin: 0.15rem 0 0.85rem; }
+      .rf-sidebar-brand { margin: 0 0 1.1rem; padding: 0 0 0.95rem; border-bottom: 1px solid #2A2A2A; }
+      .rf-sidebar-brand p { margin: 0; }
+
+      @media (max-width: 768px) {
+        html:not(.rf-hydrated) [data-testid="stSidebar"] {
+          transform: translateX(-100%) !important;
+          min-width: 0 !important;
+          max-width: 0 !important;
+          box-shadow: none !important;
+        }
+        html.rf-force-close [data-testid="stSidebar"] {
+          transform: translateX(-100%) !important;
+          min-width: 0 !important;
+          max-width: 0 !important;
+          box-shadow: none !important;
+        }
+        .block-container {
+          padding-top: 4.1rem !important;
+          padding-left: 1.05rem !important;
+          padding-right: 1.05rem !important;
+          padding-bottom: 2.4rem !important;
+        }
+        .rf-hero {
+          padding: 1.35rem 1.15rem 1.2rem;
+          margin-bottom: 1.15rem;
+          border-radius: 16px;
+        }
+        .rf-hero h1 { font-size: 1.48rem !important; max-width: none; }
+        .rf-lede { font-size: 0.95rem; max-width: none; }
+        .rf-landing-stats { grid-template-columns: 1fr 1fr; }
+        .rf-landing-stats .rf-card:last-child { grid-column: 1 / -1; }
+        .rf-steps { grid-template-columns: 1fr; margin-bottom: 1.1rem; }
+        .stTabs [data-baseweb="tab-list"] {
+          gap: 0.85rem; overflow-x: auto; flex-wrap: nowrap;
+          -webkit-overflow-scrolling: touch;
+        }
+        .stTabs [data-baseweb="tab"] {
+          font-size: 0.86rem; padding: 0.55rem 0 0.8rem; white-space: nowrap;
+        }
+        div[data-testid="stMetricValue"] { font-size: 1.18rem; }
+        [data-testid="stSidebarCollapsedControl"] {
+          top: 0.55rem !important;
+          left: 0.55rem !important;
+        }
+        .stButton > button[kind="primary"] {
+          min-height: 3rem;
+          font-size: 1.02rem;
+        }
+        .stApp { overflow-x: hidden; }
+      }
+      @media (max-width: 900px) and (min-width: 769px) {
+        .rf-steps, .rf-landing-stats { grid-template-columns: 1fr; }
         .rf-hero h1 { font-size: 1.4rem !important; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        [data-testid="stSidebar"] { transition: none !important; }
       }
     </style>
     """,
     unsafe_allow_html=True,
 )
+
+
+_NAV_JS = r"""
+(function () {
+  const win = window.parent;
+  const doc = win.document;
+  const cmd = "__CMD__";
+  const mobileMq = win.matchMedia("(max-width: 768px)");
+
+  function isMobile() {
+    return mobileMq.matches;
+  }
+
+  function sidebar() {
+    return doc.querySelector('[data-testid="stSidebar"]');
+  }
+
+  function isExpanded() {
+    const sb = sidebar();
+    return !!(sb && sb.getAttribute("aria-expanded") === "true");
+  }
+
+  function collapse() {
+    const sb = sidebar();
+    if (!sb || !isExpanded()) return;
+    const btn =
+      sb.querySelector('[data-testid="stSidebarCollapseButton"] button') ||
+      doc.querySelector('[data-testid="stSidebarCollapseButton"] button');
+    if (btn) btn.click();
+  }
+
+  function expand() {
+    if (isExpanded()) return;
+    const btn = doc.querySelector('[data-testid="stSidebarCollapsedControl"] button');
+    if (btn) btn.click();
+  }
+
+  function hydrate() {
+    doc.documentElement.classList.add("rf-hydrated");
+  }
+
+  if (!win.__rfNav) {
+    win.__rfNav = { booted: false };
+    const start = Date.now();
+    const boot = win.setInterval(function () {
+      const sb = sidebar();
+      if (!sb && Date.now() - start < 4000) return;
+      win.clearInterval(boot);
+      if (isMobile()) {
+        collapse();
+        win.setTimeout(collapse, 80);
+      } else {
+        expand();
+      }
+      win.setTimeout(hydrate, 120);
+    }, 40);
+    win.setTimeout(hydrate, 1600);
+  }
+
+  if (cmd === "close") {
+    doc.documentElement.classList.add("rf-force-close");
+    collapse();
+    win.setTimeout(collapse, 60);
+    win.setTimeout(collapse, 180);
+    win.setTimeout(function () {
+      collapse();
+      doc.documentElement.classList.remove("rf-force-close");
+      hydrate();
+    }, 480);
+  }
+})();
+"""
+
+_FORCE_SIDEBAR_CSS = """
+<style>
+  @media (max-width: 768px) {
+    [data-testid="stSidebar"] {
+      transform: translateX(-100%) !important;
+      min-width: 0 !important;
+      max-width: 0 !important;
+      box-shadow: none !important;
+    }
+  }
+</style>
+"""
+
+
+def _queue_forecast() -> None:
+    st.session_state["_forecast_phase"] = "close"
+
+
+def _inject_nav(cmd: str) -> None:
+    tick = int(st.session_state.get("_nav_tick", 0))
+    script = _NAV_JS.replace("__CMD__", cmd)
+    components.html(
+        f"<!DOCTYPE html><html><head><meta charset='utf-8'></head>"
+        f"<body><script>/* {cmd}-{tick} */{script}</script></body></html>",
+        height=0,
+        width=0,
+    )
+
+
+def _close_sidebar_now() -> None:
+    st.session_state["_nav_tick"] = int(st.session_state.get("_nav_tick", 0)) + 1
+    st.markdown(_FORCE_SIDEBAR_CSS, unsafe_allow_html=True)
+    _inject_nav("close")
 
 
 @st.cache_data(show_spinner=False)
@@ -299,7 +513,6 @@ def _plotly_theme(fig: go.Figure, *, height: int = 320, y_title: str = "") -> go
 
 
 def _hero(*, horizon: int | None = None, multipliers: dict[str, float] | None = None) -> None:
-    status = ""
     if horizon is not None and multipliers is not None:
         chips = "".join(
             f'<span class="rf-chip">{_channel_name(k)} {v:.2f}×</span>'
@@ -310,6 +523,16 @@ def _hero(*, horizon: int | None = None, multipliers: dict[str, float] | None = 
             f'<span class="rf-chip"><em>{horizon}-day</em> outlook</span>'
             f"{chips}"
             f"</div>"
+        )
+    else:
+        status = (
+            '<div class="rf-status">'
+            '<span class="rf-chip">Google Ads</span>'
+            '<span class="rf-chip">Meta Ads</span>'
+            '<span class="rf-chip">Microsoft Ads</span>'
+            '<span class="rf-chip"><em>P10–P50–P90</em></span>'
+            '<span class="rf-chip">30 / 60 / 90 days</span>'
+            "</div>"
         )
     st.markdown(
         f"""
@@ -329,12 +552,36 @@ def _issue_title(issue) -> tuple[str, str]:
     return title, why
 
 
-def _render_empty_state() -> None:
+def _render_empty_state(data_dir: str) -> None:
+    cards = [
+        ("Channels", "3", "Google, Meta, and Microsoft Ads in one outlook."),
+        ("Horizon", "30–90d", "Pick the window in Plan, then score both mixes."),
+        ("Range", "P10–P90", "Cautious floor, likely number, optimistic ceiling."),
+    ]
+    try:
+        _panel, qa = _load_panel(data_dir)
+        inv = qa.inventory.get("channels", {}) if qa else {}
+        if inv:
+            cards[0] = (
+                "Channels loaded",
+                str(len(inv)),
+                " · ".join(_channel_name(ch) for ch in inv),
+            )
+    except Exception:
+        inv = {}
+
+    stats = "".join(
+        f'<div class="rf-card"><h4>{title}</h4><p class="rf-big">{big}</p>'
+        f'<p class="rf-muted">{note}</p></div>'
+        for title, big, note in cards
+    )
+    st.markdown(f'<div class="rf-landing-stats">{stats}</div>', unsafe_allow_html=True)
+
     st.markdown(
         """
         <div class="rf-steps">
           <div class="rf-step"><span>1 · PLAN</span><h4>Keep spend as-is, or try a what-if</h4>
-          <p class="rf-muted">Use the sliders. 1.00 is today’s mix. 1.20 means +20% on that channel.</p></div>
+          <p class="rf-muted">Open Plan to move a slider. 1.00 is today’s mix. 1.20 means +20% on that channel.</p></div>
           <div class="rf-step"><span>2 · FORECAST</span><h4>Run the outlook</h4>
           <p class="rf-muted">We score a baseline and your scenario together. No retraining, no network.</p></div>
           <div class="rf-step"><span>3 · DECIDE</span><h4>Compare range, channels, campaigns</h4>
@@ -342,6 +589,34 @@ def _render_empty_state() -> None:
         </div>
         """,
         unsafe_allow_html=True,
+    )
+
+    if inv:
+        snaps = "".join(
+            (
+                '<div class="rf-card">'
+                f'<p class="rf-kicker">{_channel_name(ch)}</p>'
+                f'<p class="rf-big">{int(stats_row["campaigns"])} campaigns</p>'
+                '<p class="rf-muted">'
+                f'Historic ROAS <span class="rf-orange">{stats_row["blended_roas"]:.2f}</span>'
+                f' · {100.0 - float(stats_row.get("sparsity_pct", 0)):.0f}% active days'
+                "</p></div>"
+            )
+            for ch, stats_row in inv.items()
+        )
+        st.markdown(f'<div class="rf-landing-stats">{snaps}</div>', unsafe_allow_html=True)
+
+    st.markdown(
+        '<p class="rf-cta-note">Sample exports are already selected. Tap <span class="rf-orange">Plan</span> '
+        "at the top left to change the mix, or run the default outlook now.</p>",
+        unsafe_allow_html=True,
+    )
+    st.button(
+        "Run forecast",
+        type="primary",
+        use_container_width=True,
+        on_click=_queue_forecast,
+        key="run_main",
     )
 
 
@@ -681,7 +956,18 @@ def _render_ai(panel, baseline, scenario, qa, h, multipliers, api_key, model_nam
 
 
 def main() -> None:
+    phase = st.session_state.get("_forecast_phase")
+
     with st.sidebar:
+        st.markdown(
+            """
+            <div class="rf-sidebar-brand">
+              <p class="rf-kicker">Revenue Foresight</p>
+              <p class="rf-muted">Set the horizon and spend mix, then score the outlook.</p>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
         st.markdown("##### Plan")
         horizon = st.selectbox(
             "How far ahead?",
@@ -715,11 +1001,26 @@ def main() -> None:
             )
             model_name = st.text_input("Model", value=default_model)
 
-        run = st.button("Run forecast", type="primary", use_container_width=True)
+        st.button(
+            "Run forecast",
+            type="primary",
+            use_container_width=True,
+            on_click=_queue_forecast,
+            key="run_sidebar",
+        )
 
         with st.expander("Advanced"):
             data_dir = st.text_input("Data folder", value=str(ROOT / "data"))
             model_path = st.text_input("Model file", value=str(ROOT / "pickle" / "model.pkl"))
+
+    if phase == "close":
+        _close_sidebar_now()
+        st.session_state["_forecast_phase"] = "score"
+    elif phase == "score":
+        _close_sidebar_now()
+    elif "rf_nav_booted" not in st.session_state:
+        st.session_state.rf_nav_booted = True
+        _inject_nav("boot")
 
     if "baseline" not in st.session_state:
         st.session_state.baseline = None
@@ -727,7 +1028,8 @@ def main() -> None:
         st.session_state.panel = None
         st.session_state.qa = None
 
-    if run:
+    if phase == "score":
+        st.session_state["_forecast_phase"] = None
         with st.spinner("Scoring current plan and your what-if…"):
             panel, qa = _load_panel(data_dir)
             _model_path(model_path)
@@ -747,8 +1049,9 @@ def main() -> None:
 
     if baseline is None:
         _hero()
-        _render_empty_state()
-        st.info("Set the sliders on the left, then click **Run forecast**. Sample data is already selected.")
+        _render_empty_state(data_dir)
+        if phase == "close":
+            st.rerun()
         return
 
     h = horizon
@@ -776,6 +1079,9 @@ def main() -> None:
             st.caption("Run a forecast to load the data check.")
     with tab_ai:
         _render_ai(panel, baseline, scenario, qa, h, multipliers, api_key, model_name, provider)
+
+    if phase == "close":
+        st.rerun()
 
 
 if __name__ == "__main__":
