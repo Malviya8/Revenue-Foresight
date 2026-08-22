@@ -9,6 +9,7 @@ Holdout TEST (sample data, `scripts/evaluate.py`): model wMAPE **0.500** vs run-
 ---
 
 ## Demo
+Link: https://revenue-foresight.streamlit.app/
 
 Plan a mix, then score the next 30 / 60 / 90 days — a likely number plus a cautious and optimistic range.
 
