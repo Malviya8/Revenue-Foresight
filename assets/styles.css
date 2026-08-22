@@ -1,0 +1,945 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap');
+
+/* ==========================================================================
+   1. Design tokens
+   ========================================================================== */
+
+:root {
+  /* Surfaces, dark to light */
+  --rf-bg-deep: #060608;
+  --rf-bg: #0A0A0D;
+  --rf-surface: rgba(23, 23, 27, 0.72);
+  --rf-surface-2: rgba(32, 32, 37, 0.66);
+  --rf-surface-solid: #16161A;
+  --rf-line: rgba(255, 255, 255, 0.075);
+  --rf-line-strong: rgba(255, 255, 255, 0.155);
+
+  /* Text */
+  --rf-text: #ECECEE;
+  --rf-text-strong: #F8F8FA;
+  --rf-text-muted: #9A9AA3;
+  --rf-text-dim: #71717A;
+
+  /* Accent */
+  --rf-accent: #FF6A3D;
+  --rf-accent-soft: #FF9A74;
+  --rf-accent-deep: #E03E12;
+  --rf-accent-glow: rgba(255, 106, 61, 0.42);
+  --rf-accent-wash: rgba(255, 106, 61, 0.13);
+  --rf-accent-hair: rgba(255, 106, 61, 0.30);
+
+  /* Radius */
+  --rf-r-sm: 10px;
+  --rf-r-md: 14px;
+  --rf-r-lg: 20px;
+  --rf-r-xl: 26px;
+
+  /* Elevation */
+  --rf-e-1: 0 2px 10px rgba(0, 0, 0, 0.32);
+  --rf-e-2: 0 14px 34px rgba(0, 0, 0, 0.40);
+  --rf-e-3: 0 28px 64px rgba(0, 0, 0, 0.52);
+
+  /* Motion */
+  --rf-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --rf-ease-out: cubic-bezier(0.16, 1, 0.30, 1);
+  --rf-ease-spring: cubic-bezier(0.34, 1.46, 0.64, 1);
+  --rf-fast: 170ms;
+  --rf-dur: 340ms;
+  --rf-slow: 700ms;
+
+  /* Cursor spotlight, rewritten per-element by motion.js */
+  --rf-x: 50%;
+  --rf-y: -20%;
+}
+
+/* ==========================================================================
+   2. Keyframes
+   ========================================================================== */
+
+@keyframes rf-aurora {
+  0%   { transform: translate3d(0, 0, 0) scale(1);        opacity: 0.82; }
+  50%  { transform: translate3d(2.5%, -2%, 0) scale(1.09); opacity: 1; }
+  100% { transform: translate3d(-2%, 2.5%, 0) scale(1.04); opacity: 0.88; }
+}
+@keyframes rf-fade-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes rf-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes rf-shimmer {
+  0%   { background-position: 220% 50%; }
+  55%  { background-position: -60% 50%; }
+  100% { background-position: -60% 50%; }
+}
+@keyframes rf-spin {
+  to { transform: rotate(1turn); }
+}
+@keyframes rf-sweep {
+  0%   { left: -45%; opacity: 0; }
+  18%  { opacity: 1; }
+  62%  { left: 115%; opacity: 0; }
+  100% { left: 115%; opacity: 0; }
+}
+@keyframes rf-pulse-glow {
+  0%, 100% { box-shadow: 0 0 0 1px var(--rf-accent-hair), 0 8px 26px rgba(0, 0, 0, 0.42); }
+  50%      { box-shadow: 0 0 0 1px var(--rf-accent-glow), 0 8px 34px var(--rf-accent-glow); }
+}
+@keyframes rf-scan {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+@keyframes rf-veil-out {
+  to { opacity: 0; visibility: hidden; }
+}
+
+/* ==========================================================================
+   3. Base and typography
+   ========================================================================== */
+
+html, body, [class*="css"], .stApp, p, span, label, button {
+  font-family: 'DM Sans', sans-serif !important;
+}
+html, body { background: var(--rf-bg-deep); }
+/* isolation gives .stApp its own stacking context, which is what lets the
+   negative z-index ambient layers below paint over the opaque body background. */
+.stApp { background: transparent; color: var(--rf-text); isolation: isolate; }
+
+h1, h2, h3, h4 {
+  font-family: 'DM Sans', sans-serif !important;
+  letter-spacing: -0.028em;
+  font-weight: 650 !important;
+  color: var(--rf-text-strong) !important;
+}
+.block-container {
+  padding-top: 2.25rem;
+  padding-bottom: 3.5rem;
+  max-width: 1120px;
+  position: relative;
+  z-index: 1;
+}
+::selection { background: var(--rf-accent-hair); color: var(--rf-text-strong); }
+
+/* Scrollbars, so the chrome matches the surface ramp */
+* { scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, 0.14) transparent; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--rf-accent-hair); background-clip: content-box; }
+
+/* ==========================================================================
+   4. Ambient depth (fixed, so reruns never restart it)
+   ========================================================================== */
+
+.stApp::before {
+  content: "";
+  position: fixed;
+  inset: -8%;
+  z-index: -2;
+  pointer-events: none;
+  background:
+    radial-gradient(38vmax 32vmax at 22% 12%, rgba(255, 106, 61, 0.34), transparent 64%),
+    radial-gradient(32vmax 28vmax at 80% 4%,  rgba(255, 154, 116, 0.22), transparent 62%),
+    radial-gradient(44vmax 36vmax at 64% 86%, rgba(224, 62, 18, 0.26), transparent 66%),
+    radial-gradient(28vmax 26vmax at 8% 70%,  rgba(124, 92, 255, 0.16), transparent 62%);
+  filter: blur(26px) saturate(126%);
+  animation: rf-aurora 46s var(--rf-ease-out) infinite alternate;
+  will-change: transform, opacity;
+}
+
+.stApp::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.055'/%3E%3C/svg%3E"),
+    radial-gradient(135% 105% at 50% 40%, transparent 56%, rgba(0, 0, 0, 0.34) 100%);
+  background-size: 200px 200px, cover;
+}
+
+/* ==========================================================================
+   5. Streamlit chrome we hide or flatten
+   ========================================================================== */
+
+header[data-testid="stHeader"] {
+  background: transparent !important;
+  border: none !important;
+  height: 0 !important;
+  min-height: 0 !important;
+}
+#MainMenu { visibility: hidden; }
+.stAppDeployButton, .stDeployButton, [data-testid="stToolbar"] { display: none !important; }
+[data-testid="stDecoration"] { display: none; }
+[data-testid="manage-app-button"] { display: none !important; }
+
+/* Zero-height component iframes are our JS bridge; keep them out of layout. */
+iframe[height="0"] {
+  position: absolute !important;
+  left: -9999px !important;
+  width: 0 !important;
+  height: 0 !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  border: 0 !important;
+}
+div[data-testid="stIFrame"]:has(iframe[height="0"]),
+.stElementContainer:has(iframe[height="0"]) {
+  height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+
+/* ==========================================================================
+   6. First-paint veil
+   ========================================================================== */
+
+.rf-veil {
+  position: fixed;
+  inset: 0;
+  z-index: 1000010;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(58% 58% at 50% 44%, #15151B 0%, var(--rf-bg-deep) 72%);
+  animation: rf-veil-out 1.15s var(--rf-ease-out) 0.62s forwards;
+}
+.rf-veil-inner { text-align: center; animation: rf-fade-in 0.45s var(--rf-ease-out) both; }
+.rf-veil-ring {
+  width: 54px;
+  height: 54px;
+  margin: 0 auto 1.15rem;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, transparent 0 58%, var(--rf-accent-deep) 74%, var(--rf-accent-soft) 96%, transparent 100%);
+  animation: rf-spin 900ms linear infinite;
+  mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px));
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px));
+}
+.rf-veil .rf-kicker { margin: 0 0 0.3rem; }
+.rf-veil-note { margin: 0; color: var(--rf-text-dim); font-size: 0.86rem; }
+
+/* ==========================================================================
+   7. Scroll reveal (classes are applied by motion.js, never by default,
+      so the page is fully readable if the script never runs)
+   ========================================================================== */
+
+.rf-reveal { opacity: 0; transform: translateY(20px); will-change: opacity, transform; }
+.rf-reveal.rf-in {
+  opacity: 1;
+  transform: none;
+  transition: opacity var(--rf-slow) var(--rf-ease-out), transform var(--rf-slow) var(--rf-ease-out);
+}
+.rf-reveal.rf-now { opacity: 1; transform: none; transition: none; }
+
+/* ==========================================================================
+   8. Hero
+   ========================================================================== */
+
+.rf-hero {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border-radius: var(--rf-r-xl);
+  padding: 2.05rem 2.15rem 1.8rem;
+  margin: 0 0 1.95rem 0;
+  color: var(--rf-text);
+  box-shadow: var(--rf-e-3);
+}
+/* Rotating conic ring, masked down to a hairline by the inner face below. */
+.rf-hero::before {
+  content: "";
+  position: absolute;
+  inset: -85%;
+  z-index: -2;
+  background: conic-gradient(from 0deg,
+    transparent 0 54%,
+    var(--rf-accent-deep) 68%,
+    var(--rf-accent) 80%,
+    var(--rf-accent-soft) 88%,
+    transparent 96%);
+  animation: rf-spin 13s linear infinite;
+  opacity: 0.85;
+  will-change: transform;
+}
+.rf-hero::after {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  z-index: -1;
+  border-radius: calc(var(--rf-r-xl) - 1px);
+  background:
+    radial-gradient(760px 300px at 92% -14%, rgba(255, 106, 61, 0.15), transparent 58%),
+    radial-gradient(420px 260px at var(--rf-x) var(--rf-y), rgba(255, 154, 116, 0.10), transparent 62%),
+    linear-gradient(168deg, #17171C 0%, #0C0C10 100%);
+}
+.rf-hero > * { position: relative; z-index: 1; }
+
+.rf-kicker {
+  color: var(--rf-accent-soft);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  margin: 0 0 0.7rem 0;
+}
+.rf-hero h1 {
+  color: var(--rf-text-strong) !important;
+  margin: 0 0 0.75rem 0;
+  font-size: 1.86rem !important;
+  line-height: 1.22;
+  font-weight: 650 !important;
+  max-width: 34rem;
+}
+@supports ((-webkit-background-clip: text) or (background-clip: text)) {
+  .rf-hero h1 {
+    background: linear-gradient(100deg,
+      var(--rf-text-strong) 0%, var(--rf-text-strong) 36%,
+      var(--rf-accent-soft) 50%,
+      var(--rf-text-strong) 64%, var(--rf-text-strong) 100%);
+    background-size: 260% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: rf-shimmer 7s var(--rf-ease-out) 1.1s infinite;
+  }
+}
+.rf-lede {
+  margin: 0;
+  color: #B6B6BE;
+  font-size: 1rem;
+  line-height: 1.58;
+  max-width: 40rem;
+}
+.rf-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.55rem 0.7rem;
+  margin-top: 1.35rem;
+  padding: 1.05rem 0 0;
+  border-top: 1px solid var(--rf-line);
+  color: var(--rf-text-muted);
+  font-size: 0.86rem;
+}
+
+/* Compact variant, used once a forecast exists */
+.rf-hero.rf-compact { padding: 1.25rem 1.9rem 1.15rem; margin-bottom: 1.4rem; border-radius: var(--rf-r-lg); }
+.rf-hero.rf-compact::after { border-radius: calc(var(--rf-r-lg) - 1px); }
+.rf-hero.rf-compact::before { animation-duration: 18s; opacity: 0.6; }
+.rf-hero.rf-compact h1 { font-size: 1.36rem !important; margin-bottom: 0; max-width: 40rem; }
+.rf-hero.rf-compact .rf-status { margin-top: 1rem; padding-top: 0.85rem; }
+
+/* Entrance, first paint only. motion.js sets html.rf-booted once it is done. */
+html:not(.rf-booted) .rf-hero > .rf-kicker { animation: rf-fade-up 0.66s var(--rf-ease-out) 0.06s both; }
+html:not(.rf-booted) .rf-hero > h1 { animation: rf-fade-up 0.72s var(--rf-ease-out) 0.16s both; }
+html:not(.rf-booted) .rf-hero > .rf-lede { animation: rf-fade-up 0.72s var(--rf-ease-out) 0.28s both; }
+html:not(.rf-booted) .rf-hero > .rf-status { animation: rf-fade-up 0.72s var(--rf-ease-out) 0.4s both; }
+html:not(.rf-booted) .rf-hero > .rf-status > .rf-chip {
+  animation: rf-fade-up 0.5s var(--rf-ease-spring) both;
+}
+html:not(.rf-booted) .rf-hero > .rf-status > .rf-chip:nth-child(1) { animation-delay: 0.48s; }
+html:not(.rf-booted) .rf-hero > .rf-status > .rf-chip:nth-child(2) { animation-delay: 0.55s; }
+html:not(.rf-booted) .rf-hero > .rf-status > .rf-chip:nth-child(3) { animation-delay: 0.62s; }
+html:not(.rf-booted) .rf-hero > .rf-status > .rf-chip:nth-child(4) { animation-delay: 0.69s; }
+html:not(.rf-booted) .rf-hero > .rf-status > .rf-chip:nth-child(5) { animation-delay: 0.76s; }
+
+@supports ((-webkit-background-clip: text) or (background-clip: text)) {
+  html:not(.rf-booted) .rf-hero > h1 {
+    animation:
+      rf-fade-up 0.72s var(--rf-ease-out) 0.16s both,
+      rf-shimmer 7s var(--rf-ease-out) 1.1s infinite;
+  }
+}
+
+/* ==========================================================================
+   9. Surfaces: chips, cards, steps, issues, pills
+   ========================================================================== */
+
+.rf-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.015));
+  border: 1px solid var(--rf-line);
+  color: #E8E8EC;
+  border-radius: 999px;
+  padding: 0.26rem 0.7rem;
+  font-weight: 600;
+  font-size: 0.8rem;
+  transition:
+    transform var(--rf-fast) var(--rf-ease-spring),
+    border-color var(--rf-fast) var(--rf-ease),
+    box-shadow var(--rf-dur) var(--rf-ease);
+}
+.rf-chip:hover {
+  transform: translateY(-2px);
+  border-color: var(--rf-accent-hair);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4), 0 0 16px var(--rf-accent-wash);
+}
+.rf-chip em { color: var(--rf-accent-soft); font-style: normal; font-weight: 700; }
+
+.rf-card {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.012)),
+    var(--rf-surface);
+  border: 1px solid var(--rf-line);
+  border-radius: var(--rf-r-md);
+  padding: 1.15rem 1.2rem;
+  height: 100%;
+  box-shadow: var(--rf-e-1);
+  backdrop-filter: blur(14px) saturate(125%);
+  -webkit-backdrop-filter: blur(14px) saturate(125%);
+  transition:
+    transform var(--rf-dur) var(--rf-ease-spring),
+    border-color var(--rf-dur) var(--rf-ease),
+    box-shadow var(--rf-dur) var(--rf-ease);
+}
+/* Cursor spotlight */
+.rf-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: radial-gradient(260px circle at var(--rf-x) var(--rf-y), rgba(255, 106, 61, 0.18), transparent 68%);
+  opacity: 0;
+  transition: opacity var(--rf-dur) var(--rf-ease);
+  pointer-events: none;
+}
+.rf-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--rf-line-strong);
+  box-shadow: var(--rf-e-2), 0 0 0 1px var(--rf-accent-wash);
+}
+.rf-card:hover::before { opacity: 1; }
+
+.rf-card h4 {
+  margin: 0 0 0.4rem 0;
+  font-size: 0.82rem;
+  color: var(--rf-text-muted) !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.rf-card .rf-big {
+  font-size: 1.5rem;
+  color: #F5F5F8;
+  margin: 0.1rem 0 0.45rem;
+  font-weight: 650;
+  letter-spacing: -0.035em;
+}
+.rf-muted { color: var(--rf-text-muted); font-size: 0.88rem; line-height: 1.5; }
+.rf-orange { color: var(--rf-accent-soft); font-weight: 650; }
+
+.rf-issue {
+  position: relative;
+  overflow: hidden;
+  background: var(--rf-surface);
+  border: 1px solid var(--rf-line);
+  border-left: 3px solid var(--rf-line-strong);
+  border-radius: var(--rf-r-sm);
+  padding: 0.9rem 1.05rem;
+  margin-bottom: 0.7rem;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  transition:
+    transform var(--rf-dur) var(--rf-ease-spring),
+    border-color var(--rf-dur) var(--rf-ease),
+    box-shadow var(--rf-dur) var(--rf-ease);
+}
+.rf-issue:hover { transform: translateX(3px); box-shadow: var(--rf-e-1); }
+.rf-issue.warn { border-left-color: var(--rf-accent); }
+.rf-issue.error { border-left-color: var(--rf-accent-deep); }
+.rf-issue.info { border-left-color: #3A3A42; }
+.rf-issue strong { color: #F1F1F4; display: block; margin-bottom: 0.2rem; font-weight: 650; }
+
+.rf-pill {
+  display: inline-block;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  padding: 0.18rem 0.55rem;
+  border-radius: 999px;
+  margin-bottom: 0.4rem;
+  border: 1px solid transparent;
+}
+.rf-pill.warn { background: var(--rf-accent-wash); color: var(--rf-accent-soft); border-color: var(--rf-accent-hair); }
+.rf-pill.info { background: rgba(255, 255, 255, 0.06); color: #B0B0B8; border-color: var(--rf-line); }
+.rf-pill.error { background: rgba(224, 62, 18, 0.18); color: var(--rf-accent-soft); border-color: rgba(224, 62, 18, 0.4); }
+.rf-pill.ok { background: var(--rf-accent-wash); color: var(--rf-accent-soft); border-color: var(--rf-accent-hair); }
+
+.rf-landing-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.9rem; margin: 0 0 1.25rem; }
+.rf-cta-note { color: var(--rf-text-muted); font-size: 0.9rem; line-height: 1.5; margin: 0.15rem 0 0.85rem; }
+.rf-sidebar-brand { margin: 0 0 1.1rem; padding: 0 0 0.95rem; border-bottom: 1px solid var(--rf-line); }
+.rf-sidebar-brand p { margin: 0; }
+
+/* ==========================================================================
+   10. Metrics as cards
+   ========================================================================== */
+
+[data-testid="stMetric"] {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.012)),
+    var(--rf-surface);
+  border: 1px solid var(--rf-line);
+  border-radius: var(--rf-r-md);
+  padding: 1rem 1.1rem 0.95rem;
+  box-shadow: var(--rf-e-1);
+  backdrop-filter: blur(14px) saturate(125%);
+  -webkit-backdrop-filter: blur(14px) saturate(125%);
+  transition:
+    transform var(--rf-dur) var(--rf-ease-spring),
+    border-color var(--rf-dur) var(--rf-ease),
+    box-shadow var(--rf-dur) var(--rf-ease);
+}
+[data-testid="stMetric"]::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: radial-gradient(240px circle at var(--rf-x) var(--rf-y), rgba(255, 106, 61, 0.16), transparent 68%);
+  opacity: 0;
+  transition: opacity var(--rf-dur) var(--rf-ease);
+  pointer-events: none;
+}
+/* Accent edge that grows on hover */
+[data-testid="stMetric"]::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 18%;
+  bottom: 18%;
+  width: 2px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, var(--rf-accent-deep), var(--rf-accent-soft));
+  opacity: 0.55;
+  transition: opacity var(--rf-dur) var(--rf-ease), top var(--rf-dur) var(--rf-ease), bottom var(--rf-dur) var(--rf-ease);
+}
+[data-testid="stMetric"]:hover {
+  transform: translateY(-4px);
+  border-color: var(--rf-line-strong);
+  box-shadow: var(--rf-e-2), 0 0 0 1px var(--rf-accent-wash);
+}
+[data-testid="stMetric"]:hover::before { opacity: 1; }
+[data-testid="stMetric"]:hover::after { opacity: 1; top: 6%; bottom: 6%; }
+
+div[data-testid="stMetricValue"] {
+  font-family: 'DM Sans', sans-serif;
+  color: var(--rf-text-strong);
+  font-size: 1.5rem;
+  font-weight: 650;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+div[data-testid="stMetricLabel"] { color: var(--rf-text-muted); letter-spacing: 0.02em; }
+div[data-testid="stMetricLabel"] p { font-size: 0.76rem !important; font-weight: 600; }
+div[data-testid="stMetricDelta"] { font-weight: 600; }
+
+/* ==========================================================================
+   11. Buttons
+   ========================================================================== */
+
+.stButton > button {
+  transition:
+    transform var(--rf-fast) var(--rf-ease-spring),
+    box-shadow var(--rf-dur) var(--rf-ease),
+    border-color var(--rf-dur) var(--rf-ease),
+    background-position 0.6s var(--rf-ease);
+}
+.stButton > button[kind="primary"] {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background: linear-gradient(112deg, var(--rf-accent-deep) 0%, var(--rf-accent) 48%, var(--rf-accent-soft) 100%);
+  background-size: 190% 100%;
+  color: #1A0A03;
+  border: 0;
+  font-weight: 700;
+  letter-spacing: 0.005em;
+  border-radius: 12px;
+  box-shadow: 0 10px 26px rgba(255, 106, 61, 0.26), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+.stButton > button[kind="primary"]::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -45%;
+  width: 32%;
+  z-index: -1;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.45), transparent);
+  transform: skewX(-18deg);
+  animation: rf-sweep 4.2s var(--rf-ease-out) 1.6s infinite;
+  pointer-events: none;
+}
+.stButton > button[kind="primary"]:hover {
+  background-position: 100% 0;
+  color: #1A0A03;
+  transform: translateY(-2px);
+  box-shadow: 0 18px 42px rgba(255, 106, 61, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.36);
+}
+.stButton > button[kind="primary"]:active { transform: translateY(0) scale(0.985); }
+
+.stButton > button[kind="secondary"] {
+  border: 1px solid var(--rf-line-strong);
+  background: var(--rf-surface-2);
+  color: var(--rf-text);
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+.stButton > button[kind="secondary"]:hover {
+  border-color: var(--rf-accent-hair);
+  color: var(--rf-text-strong);
+  transform: translateY(-2px);
+  box-shadow: var(--rf-e-1), 0 0 18px var(--rf-accent-wash);
+}
+.stDownloadButton > button {
+  border: 1px solid var(--rf-line-strong) !important;
+  background: var(--rf-surface-2) !important;
+  color: var(--rf-text) !important;
+  border-radius: 12px !important;
+  transition: transform var(--rf-fast) var(--rf-ease-spring), box-shadow var(--rf-dur) var(--rf-ease), border-color var(--rf-dur) var(--rf-ease);
+}
+.stDownloadButton > button:hover {
+  border-color: var(--rf-accent-hair) !important;
+  transform: translateY(-2px);
+  box-shadow: var(--rf-e-1), 0 0 18px var(--rf-accent-wash);
+}
+
+/* ==========================================================================
+   12. Tabs
+   ========================================================================== */
+
+div[data-testid="stTabs"] { margin-top: 0.15rem; }
+.stTabs [data-baseweb="tab-list"] {
+  gap: 0.3rem;
+  padding: 0.3rem 0.3rem 0;
+  margin-bottom: 0.55rem;
+  border-bottom: 1px solid var(--rf-line);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.028), transparent);
+  border-radius: var(--rf-r-md) var(--rf-r-md) 0 0;
+}
+.stTabs [data-baseweb="tab"] {
+  color: var(--rf-text-dim);
+  font-weight: 600;
+  font-size: 0.94rem;
+  padding: 0.6rem 0.95rem 0.85rem !important;
+  border-radius: var(--rf-r-sm) var(--rf-r-sm) 0 0;
+  transition:
+    color var(--rf-fast) var(--rf-ease),
+    background var(--rf-fast) var(--rf-ease),
+    transform var(--rf-fast) var(--rf-ease-spring);
+}
+.stTabs [data-baseweb="tab"]:hover {
+  color: var(--rf-text);
+  background: rgba(255, 255, 255, 0.045);
+  transform: translateY(-1px);
+}
+.stTabs [aria-selected="true"] {
+  color: var(--rf-accent-soft) !important;
+  background: var(--rf-accent-wash);
+}
+.stTabs [data-baseweb="tab-highlight"] {
+  background: linear-gradient(90deg, var(--rf-accent-deep), var(--rf-accent), var(--rf-accent-soft));
+  height: 3px;
+  border-radius: 999px;
+  box-shadow: 0 0 12px var(--rf-accent-glow), 0 0 26px var(--rf-accent-glow);
+  transition: all 0.36s var(--rf-ease-out) !important;
+}
+.stTabs [data-baseweb="tab-border"] { background-color: transparent; }
+.stTabs [data-baseweb="tab-panel"] { animation: rf-fade-up 0.36s var(--rf-ease-out) both; }
+
+/* ==========================================================================
+   13. Data surfaces: dataframes, charts, alerts, expanders, inputs
+   ========================================================================== */
+
+[data-testid="stDataFrame"] {
+  border: 1px solid var(--rf-line);
+  border-radius: var(--rf-r-md);
+  overflow: hidden;
+  background: var(--rf-surface);
+  box-shadow: var(--rf-e-1);
+  transition: border-color var(--rf-dur) var(--rf-ease), box-shadow var(--rf-dur) var(--rf-ease);
+}
+[data-testid="stDataFrame"]:hover {
+  border-color: var(--rf-line-strong);
+  box-shadow: var(--rf-e-2);
+}
+
+/* Entrance is handled by the reveal observer, so no keyframe here: an
+   animation would outrank .rf-reveal's opacity and the reveal would no-op. */
+[data-testid="stPlotlyChart"] {
+  border-radius: var(--rf-r-md);
+  overflow: hidden;
+}
+
+[data-testid="stAlert"] {
+  background: var(--rf-surface) !important;
+  border: 1px solid var(--rf-line) !important;
+  border-left: 3px solid var(--rf-accent) !important;
+  border-radius: var(--rf-r-sm) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: var(--rf-e-1);
+  animation: rf-fade-up 0.42s var(--rf-ease-out) both;
+}
+
+[data-testid="stExpander"] {
+  border: 1px solid var(--rf-line) !important;
+  border-radius: var(--rf-r-md) !important;
+  background: var(--rf-surface) !important;
+  overflow: hidden;
+  transition: border-color var(--rf-dur) var(--rf-ease);
+}
+[data-testid="stExpander"]:hover { border-color: var(--rf-line-strong) !important; }
+[data-testid="stExpander"] summary:hover { color: var(--rf-accent-soft) !important; }
+
+.stTextInput input, .stNumberInput input, [data-baseweb="select"] > div {
+  background: rgba(255, 255, 255, 0.035) !important;
+  border-color: var(--rf-line) !important;
+  border-radius: var(--rf-r-sm) !important;
+  transition: border-color var(--rf-fast) var(--rf-ease), box-shadow var(--rf-fast) var(--rf-ease);
+}
+.stTextInput input:focus, .stNumberInput input:focus, [data-baseweb="select"] > div:focus-within {
+  border-color: var(--rf-accent-hair) !important;
+  box-shadow: 0 0 0 3px var(--rf-accent-wash) !important;
+}
+
+/* ==========================================================================
+   14. Sidebar
+   ========================================================================== */
+
+[data-testid="stSidebar"] {
+  position: relative;
+  background: linear-gradient(180deg, rgba(18, 18, 22, 0.96) 0%, rgba(9, 9, 12, 0.97) 100%);
+  border-right: 1px solid var(--rf-line);
+  backdrop-filter: blur(18px) saturate(120%);
+  -webkit-backdrop-filter: blur(18px) saturate(120%);
+  transition: transform 0.48s cubic-bezier(0.32, 0.72, 0, 1),
+              min-width 0.48s cubic-bezier(0.32, 0.72, 0, 1),
+              max-width 0.48s cubic-bezier(0.32, 0.72, 0, 1) !important;
+}
+/* Accent hairline down the sidebar edge */
+[data-testid="stSidebar"]::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: -1px;
+  bottom: 0;
+  width: 1px;
+  background: linear-gradient(180deg, transparent 0%, var(--rf-accent-glow) 26%, var(--rf-accent-hair) 55%, transparent 88%);
+  pointer-events: none;
+}
+[data-testid="stSidebar"] .block-container { padding-top: 1.15rem; }
+
+/* Glowing slider thumbs */
+[data-testid="stSidebar"] div[role="slider"] {
+  transition: box-shadow var(--rf-dur) var(--rf-ease), transform var(--rf-fast) var(--rf-ease-spring);
+}
+[data-testid="stSidebar"] div[role="slider"]:hover,
+[data-testid="stSidebar"] div[role="slider"]:focus {
+  transform: scale(1.16);
+  box-shadow: 0 0 0 6px var(--rf-accent-wash), 0 0 22px var(--rf-accent-glow) !important;
+  outline: none;
+}
+
+/* Collapsed "Plan" control */
+[data-testid="stSidebarCollapsedControl"] {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.05rem;
+  top: 0.7rem !important;
+  left: 0.7rem !important;
+  z-index: 1000002 !important;
+  background: linear-gradient(180deg, rgba(28, 28, 33, 0.94), rgba(17, 17, 21, 0.94)) !important;
+  border: 1px solid var(--rf-line-strong) !important;
+  border-radius: 12px !important;
+  padding: 0.12rem 0.75rem 0.12rem 0.12rem !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  animation: rf-pulse-glow 3.4s var(--rf-ease-out) infinite;
+  transition: transform var(--rf-fast) var(--rf-ease-spring);
+}
+[data-testid="stSidebarCollapsedControl"]:hover { transform: translateY(-1px) scale(1.03); }
+/* The control sits before the sidebar in the DOM, so it is only redundant while
+   the sidebar is open. Desktop only: on mobile the force-close window can still
+   report the sidebar as open, and hiding it there would strand the user. */
+@media (min-width: 769px) {
+  [data-testid="stSidebarCollapsedControl"]:has(~ [data-testid="stSidebar"][aria-expanded="true"]) {
+    display: none !important;
+  }
+}
+[data-testid="stSidebarCollapsedControl"]::after {
+  content: "Plan";
+  color: var(--rf-accent-soft);
+  font-family: "DM Sans", sans-serif;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding-right: 0.15rem;
+}
+
+/* ==========================================================================
+   15. Spinner and status
+   ========================================================================== */
+
+.stSpinner, [data-testid="stSpinner"] {
+  position: relative;
+  padding: 0.45rem 0 0.85rem;
+  overflow: visible !important;
+  line-height: 1.5 !important;
+}
+.stSpinner > div, [data-testid="stSpinner"] > div {
+  overflow: visible !important;
+  height: auto !important;
+}
+/* Animated scanline under the spinner label */
+[data-testid="stSpinner"]::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0.25rem;
+  height: 2px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: linear-gradient(90deg, transparent, var(--rf-accent), var(--rf-accent-soft), transparent);
+  background-size: 45% 100%;
+  background-repeat: no-repeat;
+  animation: rf-scan 1.25s var(--rf-ease-out) infinite;
+  opacity: 0.9;
+}
+[data-testid="stStatusWidget"] {
+  overflow: visible !important;
+  height: auto !important;
+  line-height: 1.5;
+  padding: 0.35rem 0.5rem;
+  background: var(--rf-surface) !important;
+  border: 1px solid var(--rf-line) !important;
+  border-radius: var(--rf-r-sm) !important;
+  backdrop-filter: blur(10px);
+}
+
+/* ==========================================================================
+   16. Responsive
+   ========================================================================== */
+
+@media (max-width: 768px) {
+  html:not(.rf-hydrated) [data-testid="stSidebar"],
+  html.rf-force-close [data-testid="stSidebar"] {
+    transform: translateX(-100%) !important;
+    min-width: 0 !important;
+    max-width: 0 !important;
+    box-shadow: none !important;
+  }
+  .block-container {
+    padding-top: 4.1rem !important;
+    padding-left: 1.05rem !important;
+    padding-right: 1.05rem !important;
+    padding-bottom: 2.4rem !important;
+  }
+  .rf-hero {
+    padding: 1.5rem 1.25rem 1.3rem;
+    margin-bottom: 1.2rem;
+    border-radius: var(--rf-r-lg);
+  }
+  .rf-hero::after { border-radius: calc(var(--rf-r-lg) - 1px); }
+  .rf-hero h1 { font-size: 1.52rem !important; max-width: none; }
+  .rf-lede { font-size: 0.95rem; max-width: none; }
+  .rf-landing-stats { grid-template-columns: 1fr 1fr; }
+  .rf-landing-stats .rf-card:last-child { grid-column: 1 / -1; }
+  .rf-hero.rf-compact { padding: 1.05rem 1.15rem 1rem; }
+  .rf-hero.rf-compact h1 { font-size: 1.16rem !important; }
+
+  .stTabs [data-baseweb="tab-list"] {
+    gap: 0.25rem;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding: 0.25rem 0 0;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    /* If a label still overflows, fade it so it reads as scrollable, not broken. */
+    mask-image: linear-gradient(to right, #000 96%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to right, #000 96%, transparent 100%);
+  }
+  .stTabs [data-baseweb="tab-list"]::-webkit-scrollbar { display: none; }
+  .stTabs [data-baseweb="tab"] {
+    font-size: 0.78rem;
+    padding: 0.5rem 0.6rem 0.72rem !important;
+    white-space: nowrap;
+    flex: 0 0 auto;
+  }
+
+  [data-testid="stMetric"] { padding: 0.85rem 0.9rem 0.8rem; }
+  div[data-testid="stMetricValue"] { font-size: 1.2rem; }
+  div[data-testid="stMetricLabel"] p { font-size: 0.68rem !important; }
+  [data-testid="stSidebarCollapsedControl"] { top: 0.55rem !important; left: 0.55rem !important; }
+  .stButton > button[kind="primary"] { min-height: 3rem; font-size: 1.02rem; }
+  .stApp { overflow-x: hidden; }
+
+  /* Touch devices have no cursor; drop the hover-only spotlight work. */
+  .rf-card::before, [data-testid="stMetric"]::before { display: none; }
+}
+
+@media (max-width: 1200px) {
+  /* Streamlit Cloud floating badges sit bottom-right; keep content clear of them. */
+  .block-container { padding-bottom: 5.5rem !important; }
+}
+@media (max-width: 380px) {
+  .stTabs [data-baseweb="tab"] { font-size: 0.72rem; padding: 0.5rem 0.45rem 0.72rem !important; }
+  .rf-landing-stats { grid-template-columns: 1fr; }
+}
+@media (max-width: 900px) and (min-width: 769px) {
+  .rf-landing-stats { grid-template-columns: 1fr; }
+  .rf-hero h1 { font-size: 1.46rem !important; }
+}
+
+/* ==========================================================================
+   17. Reduced motion
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  .stApp::before,
+  .rf-hero::before,
+  .rf-hero h1,
+  .rf-veil-ring,
+  .stButton > button[kind="primary"]::after,
+  [data-testid="stSidebarCollapsedControl"],
+  [data-testid="stSpinner"]::after {
+    animation: none !important;
+  }
+  .rf-hero h1 {
+    -webkit-text-fill-color: var(--rf-text-strong);
+    background: none;
+  }
+  .rf-veil { animation: rf-veil-out 0.2s linear both; }
+  .rf-reveal, .rf-reveal.rf-in, .rf-reveal.rf-now {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+  [data-testid="stSidebar"] { transition: none !important; }
+  [data-testid="stPlotlyChart"],
+  [data-testid="stAlert"],
+  .stTabs [data-baseweb="tab-panel"],
+  html:not(.rf-booted) .rf-hero > * { animation: none !important; }
+  * { transition-duration: 0.01ms !important; }
+}

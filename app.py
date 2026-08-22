@@ -10,6 +10,7 @@ Scoring path (run.sh) does not use this file.
 
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 
@@ -38,8 +39,10 @@ from validate import validate_panel  # noqa: E402
 
 ORANGE = "#FF6A3D"
 ORANGE_SOFT = "#FF9A74"
-MUTED = "#9A9A9A"
-WHITE = "#ECECEC"
+MUTED = "#9A9AA3"
+WHITE = "#ECECEE"
+GRID = "rgba(255,255,255,0.07)"
+HOVER_BG = "rgba(16,16,20,0.94)"
 
 CHANNEL_LABELS = {
     "google": "Google Ads",
@@ -94,280 +97,61 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-st.markdown(
-    """
-    <style>
-      @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap');
 
-      html, body, [class*="css"], .stApp, p, span, label, button {
-        font-family: 'DM Sans', sans-serif !important;
-      }
-      .stApp { background: #0C0C0C; color: #ECECEC; }
-      h1, h2, h3, h4 {
-        font-family: 'DM Sans', sans-serif !important;
-        letter-spacing: -0.025em;
-        font-weight: 650 !important;
-        color: #F2F2F2 !important;
-      }
-      .block-container { padding-top: 2.25rem; padding-bottom: 3.5rem; max-width: 1120px; }
+@st.cache_data(show_spinner=False)
+def _read_asset(name: str, stamp: float) -> str:
+    # stamp is part of the cache key on purpose. It must not be named with a
+    # leading underscore, which is how Streamlit marks an argument as unhashable.
+    del stamp
+    return (ROOT / "assets" / name).read_text(encoding="utf-8")
 
-      header[data-testid="stHeader"] {
-        background: transparent !important;
-        border: none !important;
-        height: 0 !important;
-        min-height: 0 !important;
-      }
-      #MainMenu { visibility: hidden; }
-      .stAppDeployButton, .stDeployButton, [data-testid="stToolbar"] { display: none !important; }
-      [data-testid="stDecoration"] { display: none; }
-      [data-testid="manage-app-button"] { display: none !important; }
 
-      iframe[height="0"] {
-        position: absolute !important;
-        left: -9999px !important;
-        width: 0 !important;
-        height: 0 !important;
-        opacity: 0 !important;
-        pointer-events: none !important;
-        border: 0 !important;
-      }
-      div[data-testid="stIFrame"]:has(iframe[height="0"]),
-      .stElementContainer:has(iframe[height="0"]) {
-        height: 0 !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        overflow: hidden !important;
-      }
+def _asset(name: str) -> str:
+    """Streamlit only watches .py files, so key the cache on mtime instead."""
+    path = ROOT / "assets" / name
+    return _read_asset(name, path.stat().st_mtime)
 
-      .stSpinner, [data-testid="stSpinner"] {
-        padding: 0.45rem 0 0.7rem;
-        overflow: visible !important;
-        line-height: 1.5 !important;
-      }
-      .stSpinner > div, [data-testid="stSpinner"] > div {
-        overflow: visible !important;
-        height: auto !important;
-      }
-      [data-testid="stStatusWidget"] {
-        overflow: visible !important;
-        height: auto !important;
-        line-height: 1.5;
-        padding: 0.35rem 0.5rem;
-      }
 
-      div[data-testid="stMetricValue"] {
-        font-family: 'DM Sans', sans-serif; color: #F2F2F2; font-size: 1.45rem; font-weight: 650;
-      }
-      div[data-testid="stMetricLabel"] { color: #8F8F8F; letter-spacing: 0.01em; }
-      div[data-testid="stMetricDelta"] { font-weight: 600; }
+st.markdown(f"<style>{_asset('styles.css')}</style>", unsafe_allow_html=True)
 
-      [data-testid="stSidebar"] {
-        background: #111111;
-        border-right: 1px solid #242424;
-        transition: transform 0.45s cubic-bezier(0.32, 0.72, 0, 1),
-                    min-width 0.45s cubic-bezier(0.32, 0.72, 0, 1),
-                    max-width 0.45s cubic-bezier(0.32, 0.72, 0, 1) !important;
-      }
-      [data-testid="stSidebar"] .block-container { padding-top: 1.15rem; }
 
-      [data-testid="stSidebarCollapsedControl"] {
-        display: flex !important;
-        align-items: center !important;
-        gap: 0.05rem;
-        top: 0.7rem !important;
-        left: 0.7rem !important;
-        z-index: 1000002 !important;
-        background: #161616 !important;
-        border: 1px solid #2E2E2E !important;
-        border-radius: 12px !important;
-        padding: 0.12rem 0.75rem 0.12rem 0.12rem !important;
-        box-shadow: 0 10px 28px rgba(0,0,0,0.38) !important;
-      }
-      [data-testid="stSidebarCollapsedControl"]::after {
-        content: "Plan";
-        color: #FF8A66;
-        font-family: "DM Sans", sans-serif;
-        font-size: 0.72rem;
-        font-weight: 700;
-        letter-spacing: 0.14em;
-        text-transform: uppercase;
-        padding-right: 0.15rem;
-      }
+# Streamlit runs components in a sandboxed iframe that is torn down on rerun, so
+# motion.js is copied into the app document itself where its observers survive.
+_MOTION_BOOTSTRAP = """
+<script>
+(function () {
+  var win = window.parent;
+  if (!win || win.__rfMotionInjected) return;
+  win.__rfMotionInjected = true;
+  var el = win.document.createElement("script");
+  el.textContent = __SOURCE__;
+  win.document.head.appendChild(el);
+})();
+</script>
+"""
 
-      .stButton > button[kind="primary"] {
-        background: #FF6A3D; color: #0C0C0C; border: 0; font-weight: 700;
-        border-radius: 10px; box-shadow: 0 0 0 1px rgba(255,106,61,0.25);
-      }
-      .stButton > button[kind="primary"]:hover { background: #FF815C; border: 0; color: #0C0C0C; }
-      .stButton > button[kind="secondary"] {
-        border: 1px solid #2E2E2E; background: #191919; color: #ECECEC; border-radius: 10px;
-      }
+_BOOT_VEIL = """
+<div class="rf-veil">
+  <div class="rf-veil-inner">
+    <div class="rf-veil-ring"></div>
+    <p class="rf-kicker">Revenue Foresight</p>
+    <p class="rf-veil-note">Warming up the outlook…</p>
+  </div>
+</div>
+"""
 
-      div[data-testid="stTabs"] { margin-top: 0.15rem; }
-      .stTabs [data-baseweb="tab-list"] {
-        gap: 1.65rem; padding-left: 0; margin-bottom: 0.35rem;
-        border-bottom: 1px solid #262626;
-      }
-      .stTabs [data-baseweb="tab"] {
-        color: #8F8F8F; font-weight: 600; padding: 0.7rem 0 0.95rem; font-size: 0.95rem;
-      }
-      .stTabs [aria-selected="true"] { color: #FF8A66 !important; }
-      .stTabs [data-baseweb="tab-highlight"] { background-color: #FF6A3D; height: 2px; }
-      .stTabs [data-baseweb="tab-border"] { background-color: transparent; }
 
-      [data-testid="stDataFrame"] {
-        border: 1px solid #262626; border-radius: 12px; overflow: hidden; background: #141414;
-      }
+def _boot_motion() -> None:
+    source = json.dumps(_asset("motion.js")).replace("</", "<\\/")
+    components.html(_MOTION_BOOTSTRAP.replace("__SOURCE__", source), height=0, width=0)
 
-      .rf-hero {
-        background:
-          radial-gradient(720px 280px at 92% -10%, rgba(255,106,61,0.10), transparent 58%),
-          linear-gradient(180deg, #161616 0%, #101010 100%);
-        border: 1px solid #2A2A2A;
-        box-shadow: 0 18px 40px rgba(0,0,0,0.28);
-        color: #ECECEC;
-        padding: 1.6rem 1.75rem 1.45rem;
-        border-radius: 18px;
-        margin: 0 0 1.85rem 0;
-      }
-      .rf-kicker {
-        color: #FF8A66; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.18em;
-        text-transform: uppercase; margin: 0 0 0.7rem 0;
-      }
-      .rf-hero h1 {
-        color: #F7F7F7 !important; margin: 0 0 0.7rem 0; font-size: 1.72rem !important;
-        line-height: 1.25; font-weight: 650 !important; max-width: 34rem;
-      }
-      .rf-lede { margin: 0; color: #B4B4B4; font-size: 0.98rem; line-height: 1.55; max-width: 40rem; }
-      .rf-hero.rf-compact { padding: 1.15rem 1.75rem 1.1rem; margin-bottom: 1.35rem; }
-      .rf-hero.rf-compact h1 { font-size: 1.32rem !important; margin-bottom: 0; max-width: 40rem; }
-      .rf-hero.rf-compact .rf-status { margin-top: 0.95rem; padding-top: 0.8rem; }
-      .rf-status {
-        display: flex; flex-wrap: wrap; align-items: center; gap: 0.55rem 0.7rem;
-        margin-top: 1.3rem; padding: 1rem 0 0;
-        border-top: 1px solid #2A2A2A; color: #9A9A9A; font-size: 0.86rem;
-      }
-      .rf-chip {
-        display: inline-flex; align-items: center; gap: 0.35rem;
-        background: #1C1C1C; border: 1px solid #333; color: #E6E6E6;
-        border-radius: 999px; padding: 0.22rem 0.65rem; font-weight: 600; font-size: 0.8rem;
-      }
-      .rf-chip em { color: #FF8A66; font-style: normal; font-weight: 700; }
 
-      .rf-card {
-        background: #161616; border: 1px solid #2A2A2A; border-radius: 14px;
-        padding: 1.1rem 1.15rem; height: 100%;
-        box-shadow: 0 10px 24px rgba(0,0,0,0.18);
-      }
-      .rf-card h4 { margin: 0 0 0.4rem 0; font-size: 0.82rem; color: #9A9A9A !important; font-weight: 600 !important; letter-spacing: 0.04em; text-transform: uppercase; }
-      .rf-card .rf-big { font-size: 1.45rem; color: #F4F4F4; margin: 0.1rem 0 0.45rem; font-weight: 650; letter-spacing: -0.03em; }
-      .rf-muted { color: #9A9A9A; font-size: 0.88rem; line-height: 1.5; }
-      .rf-orange { color: #FF8A66; font-weight: 650; }
-
-      .rf-issue {
-        background: #161616; border: 1px solid #2A2A2A; border-left: 3px solid #3A3A3A;
-        border-radius: 12px; padding: 0.85rem 1rem; margin-bottom: 0.7rem;
-      }
-      .rf-issue.warn { border-left-color: #FF6A3D; }
-      .rf-issue.error { border-left-color: #E03E12; }
-      .rf-issue.info { border-left-color: #3A3A3A; }
-      .rf-issue strong { color: #F0F0F0; display: block; margin-bottom: 0.2rem; font-weight: 650; }
-      .rf-pill {
-        display: inline-block; font-size: 0.66rem; font-weight: 700; letter-spacing: 0.08em;
-        text-transform: uppercase; padding: 0.16rem 0.5rem; border-radius: 999px; margin-bottom: 0.4rem;
-      }
-      .rf-pill.warn { background: rgba(255,106,61,0.14); color: #FF8A66; }
-      .rf-pill.info { background: #222; color: #B0B0B0; }
-      .rf-pill.error { background: rgba(224,62,18,0.18); color: #FF8A66; }
-      .rf-pill.ok { background: rgba(255,106,61,0.12); color: #FF8A66; }
-
-      .rf-steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.9rem; margin: 0 0 1.4rem; }
-      .rf-step { background: #161616; border: 1px solid #2A2A2A; border-radius: 14px; padding: 1.05rem 1.1rem; }
-      .rf-step span { color: #FF8A66; font-weight: 700; font-size: 0.72rem; letter-spacing: 0.1em; }
-      .rf-step h4 { margin: 0.35rem 0 0.35rem; font-size: 1.02rem !important; }
-
-      .rf-landing-stats {
-        display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.9rem; margin: 0 0 1.25rem;
-      }
-      .rf-cta-note { color: #9A9A9A; font-size: 0.9rem; line-height: 1.5; margin: 0.15rem 0 0.85rem; }
-      .rf-sidebar-brand { margin: 0 0 1.1rem; padding: 0 0 0.95rem; border-bottom: 1px solid #2A2A2A; }
-      .rf-sidebar-brand p { margin: 0; }
-
-      @media (max-width: 768px) {
-        html:not(.rf-hydrated) [data-testid="stSidebar"] {
-          transform: translateX(-100%) !important;
-          min-width: 0 !important;
-          max-width: 0 !important;
-          box-shadow: none !important;
-        }
-        html.rf-force-close [data-testid="stSidebar"] {
-          transform: translateX(-100%) !important;
-          min-width: 0 !important;
-          max-width: 0 !important;
-          box-shadow: none !important;
-        }
-        .block-container {
-          padding-top: 4.1rem !important;
-          padding-left: 1.05rem !important;
-          padding-right: 1.05rem !important;
-          padding-bottom: 2.4rem !important;
-        }
-        .rf-hero {
-          padding: 1.35rem 1.15rem 1.2rem;
-          margin-bottom: 1.15rem;
-          border-radius: 16px;
-        }
-        .rf-hero h1 { font-size: 1.48rem !important; max-width: none; }
-        .rf-lede { font-size: 0.95rem; max-width: none; }
-        .rf-landing-stats { grid-template-columns: 1fr 1fr; }
-        .rf-landing-stats .rf-card:last-child { grid-column: 1 / -1; }
-        .rf-steps { grid-template-columns: 1fr; margin-bottom: 1.1rem; }
-        .rf-hero.rf-compact { padding: 1rem 1.1rem 0.95rem; }
-        .rf-hero.rf-compact h1 { font-size: 1.14rem !important; }
-        .stTabs [data-baseweb="tab-list"] {
-          gap: 0.5rem; overflow-x: auto; flex-wrap: nowrap;
-          padding-right: 0; scrollbar-width: none;
-          -webkit-overflow-scrolling: touch;
-          /* If a label still overflows, fade it so it reads as scrollable, not broken. */
-          mask-image: linear-gradient(to right, #000 97%, transparent 100%);
-          -webkit-mask-image: linear-gradient(to right, #000 97%, transparent 100%);
-        }
-        .stTabs [data-baseweb="tab-list"]::-webkit-scrollbar { display: none; }
-        .stTabs [data-baseweb="tab"] {
-          font-size: 0.78rem; padding: 0.55rem 0 0.8rem;
-          white-space: nowrap; flex: 0 0 auto;
-        }
-        div[data-testid="stMetricValue"] { font-size: 1.18rem; }
-        div[data-testid="stMetricLabel"] p { font-size: 0.76rem; }
-        [data-testid="stSidebarCollapsedControl"] {
-          top: 0.55rem !important;
-          left: 0.55rem !important;
-        }
-        .stButton > button[kind="primary"] {
-          min-height: 3rem;
-          font-size: 1.02rem;
-        }
-        .stApp { overflow-x: hidden; }
-      }
-      @media (max-width: 1200px) {
-        /* Streamlit Cloud floating badges sit bottom-right; keep content clear of them. */
-        .block-container { padding-bottom: 5.5rem !important; }
-      }
-      @media (max-width: 380px) {
-        .stTabs [data-baseweb="tab"] { font-size: 0.72rem; }
-        .rf-landing-stats { grid-template-columns: 1fr; }
-      }
-      @media (max-width: 900px) and (min-width: 769px) {
-        .rf-steps, .rf-landing-stats { grid-template-columns: 1fr; }
-        .rf-hero h1 { font-size: 1.4rem !important; }
-      }
-      @media (prefers-reduced-motion: reduce) {
-        [data-testid="stSidebar"] { transition: none !important; }
-      }
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
+def _boot_veil() -> None:
+    """Cover the first paint once per session; the fade-out is pure CSS."""
+    if st.session_state.get("rf_veil_shown"):
+        return
+    st.session_state.rf_veil_shown = True
+    st.markdown(_BOOT_VEIL, unsafe_allow_html=True)
 
 
 _NAV_JS = r"""
@@ -530,12 +314,18 @@ def _plotly_theme(fig: go.Figure, *, height: int = 320, y_title: str = "") -> go
         plot_bgcolor="rgba(0,0,0,0)",
         font=dict(color=WHITE, family="DM Sans, sans-serif", size=13),
         legend=dict(orientation="h", yanchor="bottom", y=1.12, x=0, font=dict(size=12)),
-        bargap=0.28,
+        bargap=0.32,
+        barcornerradius=6,
         hovermode="x unified",
+        hoverlabel=dict(
+            bgcolor=HOVER_BG,
+            bordercolor="rgba(255,106,61,0.45)",
+            font=dict(color=WHITE, family="DM Sans, sans-serif", size=13),
+        ),
     )
-    fig.update_xaxes(gridcolor="#2A2A2A", zeroline=False, color=MUTED, title_standoff=12)
+    fig.update_xaxes(gridcolor=GRID, zeroline=False, color=MUTED, title_standoff=12)
     fig.update_yaxes(
-        gridcolor="#2A2A2A",
+        gridcolor=GRID,
         zeroline=False,
         color=MUTED,
         title=dict(text=y_title, font=dict(size=12, color=MUTED)),
@@ -551,50 +341,86 @@ def _plotly_theme(fig: go.Figure, *, height: int = 320, y_title: str = "") -> go
 def _band_chart(p10: float, p50: float, p90: float, horizon: int) -> go.Figure:
     """Horizontal P10–P90 band with the P50 marked, for the no-scenario view."""
     fig = go.Figure()
-    fig.add_bar(
-        x=[p90 - p10],
-        base=[p10],
-        y=["Planning band"],
-        orientation="h",
-        width=0.34,
-        marker=dict(color="rgba(255,106,61,0.22)", line=dict(color=ORANGE_SOFT, width=1)),
-        hovertemplate=f"P10 {_fmt_money(p10)} → P90 {_fmt_money(p90)}<extra></extra>",
-        showlegend=False,
-    )
+    half = 0.17
+
     fig.add_scatter(
-        x=[p50],
-        y=["Planning band"],
-        mode="markers",
-        marker=dict(color=ORANGE, size=34, symbol="line-ns", line=dict(color=ORANGE, width=5)),
-        hovertemplate=f"P50 {_fmt_money(p50)}<extra></extra>",
+        x=[p10, p90, p90, p10, p10],
+        y=[-half, -half, half, half, -half],
+        mode="lines",
+        line=dict(color="rgba(255,154,116,0.50)", width=1),
+        fill="toself",
+        fillgradient=dict(
+            type="horizontal",
+            colorscale=[
+                [0.0, "rgba(224,62,18,0.34)"],
+                [0.5, "rgba(255,106,61,0.46)"],
+                [1.0, "rgba(255,154,116,0.32)"],
+            ],
+        ),
+        hoverinfo="skip",
         showlegend=False,
     )
-    for value, label, color in (
-        (p10, f"P10 {_fmt_money(p10)}", MUTED),
-        (p50, f"P50 {_fmt_money(p50)}", "#F4F4F4"),
-        (p90, f"P90 {_fmt_money(p90)}", MUTED),
+
+    # Layered strokes stand in for a glow around the planning number.
+    for width, color in (
+        (14, "rgba(255,106,61,0.10)"),
+        (7, "rgba(255,106,61,0.26)"),
+        (2.6, ORANGE_SOFT),
+    ):
+        fig.add_scatter(
+            x=[p50, p50],
+            y=[-half * 1.45, half * 1.45],
+            mode="lines",
+            line=dict(color=color, width=width),
+            hoverinfo="skip",
+            showlegend=False,
+        )
+
+    fig.add_scatter(
+        x=[p10, p50, p90],
+        y=[0, 0, 0],
+        mode="markers",
+        marker=dict(size=20, color="rgba(0,0,0,0)"),
+        customdata=[
+            f"P10 · cautious floor {_fmt_money(p10)}",
+            f"P50 · planning number {_fmt_money(p50)}",
+            f"P90 · optimistic ceiling {_fmt_money(p90)}",
+        ],
+        hovertemplate="%{customdata}<extra></extra>",
+        showlegend=False,
+    )
+
+    for value, label, color, shift in (
+        (p10, f"P10 {_fmt_money(p10)}", MUTED, -46),
+        (p50, f"P50 {_fmt_money(p50)}", "#F5F5F8", 46),
+        (p90, f"P90 {_fmt_money(p90)}", MUTED, -46),
     ):
         fig.add_annotation(
             x=value,
-            y="Planning band",
-            yshift=42 if label.startswith("P50") else -42,
+            y=0,
+            yshift=shift,
             text=label,
             showarrow=False,
             font=dict(size=13, color=color, family="DM Sans, sans-serif"),
         )
+
     span = max(p90 - p10, 1.0)
     fig.update_layout(
-        height=230,
-        margin=dict(l=16, r=16, t=34, b=52),
+        height=235,
+        margin=dict(l=16, r=16, t=38, b=52),
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
         font=dict(color=WHITE, family="DM Sans, sans-serif", size=13),
-        bargap=0.6,
+        hoverlabel=dict(
+            bgcolor=HOVER_BG,
+            bordercolor="rgba(255,106,61,0.45)",
+            font=dict(color=WHITE, family="DM Sans, sans-serif", size=13),
+        ),
     )
-    fig.update_yaxes(showticklabels=False, showgrid=False, zeroline=False)
+    fig.update_yaxes(showticklabels=False, showgrid=False, zeroline=False, range=[-0.62, 0.62])
     fig.update_xaxes(
         range=[p10 - span * 0.35, p90 + span * 0.35],
-        gridcolor="#242424",
+        gridcolor=GRID,
         zeroline=False,
         color=MUTED,
         tickprefix="$",
@@ -1124,6 +950,7 @@ def _render_ai(panel, baseline, scenario, qa, h, multipliers, api_key, model_nam
 
 
 def main() -> None:
+    _boot_veil()
     phase = st.session_state.get("_forecast_phase")
 
     with st.sidebar:
@@ -1192,6 +1019,10 @@ def main() -> None:
         st.session_state.rf_autorun = True
         if st.session_state.baseline is None and phase is None:
             phase = "score"
+
+    if "rf_motion_booted" not in st.session_state:
+        st.session_state.rf_motion_booted = True
+        _boot_motion()
 
     if phase == "close":
         _close_sidebar_now()
