@@ -23,31 +23,6 @@ pip install -r requirements-demo.txt
 streamlit run app.py
 ```
 
-## Streamlit Community Cloud
-
-1. Push this repo to GitHub (public), including `pickle/model.pkl`, `app.py`, `requirements.txt`, and `packages.txt`.
-2. Open [share.streamlit.io](https://share.streamlit.io) and sign in with GitHub.
-3. **Create app** → **Yup, I have an app**.
-4. Fill in:
-   - Repository: `Malviya8/Revenue-Foresight` (or your fork)
-   - Branch: `main`
-   - Main file path: `app.py`
-   - App URL (optional): `revenue-foresight`
-5. **Advanced settings** → Python version **3.12** → Save.  
-   Cloud currently defaults to **3.14**, which cannot install `pandas==2.2.3` (you will see `cmake` errors). The log must say `Using Python 3.12`, not `3.14`.
-6. Click **Deploy**. First build takes a few minutes (LightGBM + Plotly).
-7. On the live app, click **Run forecast** (about 30 seconds the first time).
-
-Optional LLM briefing: App settings → Secrets:
-
-```toml
-GROQ_API_KEY = "your-key"
-```
-
-Do not put keys in GitHub.
-
----
-
 ## Quick start
 
 ```bash
