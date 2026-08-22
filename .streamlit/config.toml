@@ -6,6 +6,10 @@ secondaryBackgroundColor = "#16161A"
 textColor = "#ECECEE"
 font = "sans serif"
 
+[server]
+# Serves ./static, which is where the logo lives.
+enableStaticServing = true
+
 [browser]
 gatherUsageStats = false
 

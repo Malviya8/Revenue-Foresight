@@ -92,7 +92,7 @@ ISSUE_COPY = {
 
 st.set_page_config(
     page_title="Revenue Foresight",
-    page_icon="◐",
+    page_icon=str(ROOT / "static" / "logo-mark.png"),
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -130,11 +130,20 @@ _MOTION_BOOTSTRAP = """
 </script>
 """
 
-_BOOT_VEIL = """
+def _logo(*, large: bool = False) -> str:
+    """Served from ./static so the browser caches it instead of re-parsing base64."""
+    return (
+        f'<span class="rf-logo{" rf-logo-lg" if large else ""}">'
+        '<img src="app/static/logo.png" alt="Revenue Foresight" draggable="false">'
+        "</span>"
+    )
+
+
+_BOOT_VEIL = f"""
 <div class="rf-veil">
   <div class="rf-veil-inner">
-    <div class="rf-veil-ring"></div>
-    <p class="rf-kicker">Revenue Foresight</p>
+    {_logo(large=True)}
+    <div class="rf-veil-bar"></div>
     <p class="rf-veil-note">Warming up the outlook…</p>
   </div>
 </div>
@@ -225,20 +234,6 @@ _NAV_JS = r"""
 })();
 """
 
-_FORCE_SIDEBAR_CSS = """
-<style>
-  @media (max-width: 768px) {
-    [data-testid="stSidebar"] {
-      transform: translateX(-100%) !important;
-      min-width: 0 !important;
-      max-width: 0 !important;
-      box-shadow: none !important;
-    }
-  }
-</style>
-"""
-
-
 def _queue_forecast() -> None:
     st.session_state["_forecast_phase"] = "close"
 
@@ -255,8 +250,11 @@ def _inject_nav(cmd: str) -> None:
 
 
 def _close_sidebar_now() -> None:
+    # No inline <style> here: an injected block lives for the rest of the session and
+    # would pin the sidebar shut, so reopening it via Plan would silently do nothing.
+    # styles.css handles the slide-out, gated on the html.rf-force-close class that
+    # _NAV_JS adds and then removes.
     st.session_state["_nav_tick"] = int(st.session_state.get("_nav_tick", 0)) + 1
-    st.markdown(_FORCE_SIDEBAR_CSS, unsafe_allow_html=True)
     _inject_nav("close")
 
 
@@ -437,9 +435,9 @@ def _hero(*, horizon: int | None = None, multipliers: dict[str, float] | None = 
     """Full hero on the landing; a compact status band once a forecast exists."""
     if horizon is None or multipliers is None:
         st.markdown(
-            """
+            f"""
             <div class="rf-hero">
-              <p class="rf-kicker">Revenue Foresight</p>
+              {_logo()}
               <h1>See the next 30–90 days before you spend.</h1>
               <p class="rf-lede">Probabilistic revenue and ROAS across Google, Meta, and Microsoft Ads — a likely number, plus a cautious and optimistic range.</p>
               <div class="rf-status">
@@ -467,7 +465,7 @@ def _hero(*, horizon: int | None = None, multipliers: dict[str, float] | None = 
     st.markdown(
         f"""
         <div class="rf-hero rf-compact">
-          <p class="rf-kicker">Revenue Foresight</p>
+          {_logo()}
           <h1>The next {horizon} days, before you spend.</h1>
           <div class="rf-status">
             <span class="rf-chip"><em>{horizon}-day</em> outlook</span>
@@ -955,9 +953,9 @@ def main() -> None:
 
     with st.sidebar:
         st.markdown(
-            """
+            f"""
             <div class="rf-sidebar-brand">
-              <p class="rf-kicker">Revenue Foresight</p>
+              {_logo()}
               <p class="rf-muted">Set the horizon and spend mix, then score the outlook.</p>
             </div>
             """,

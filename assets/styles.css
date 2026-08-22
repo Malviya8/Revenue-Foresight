@@ -113,12 +113,13 @@ h1, h2, h3, h4 {
   font-weight: 650 !important;
   color: var(--rf-text-strong) !important;
 }
+/* Deliberately no position/z-index here: a stacking context on the main block
+   would trap the fixed boot veil underneath the sidebar. The ambient layers sit
+   at negative z-index inside .stApp, so content already paints above them. */
 .block-container {
   padding-top: 2.25rem;
   padding-bottom: 3.5rem;
   max-width: 1120px;
-  position: relative;
-  z-index: 1;
 }
 ::selection { background: var(--rf-accent-hair); color: var(--rf-text-strong); }
 
@@ -213,18 +214,56 @@ div[data-testid="stIFrame"]:has(iframe[height="0"]),
   animation: rf-veil-out 1.15s var(--rf-ease-out) 0.62s forwards;
 }
 .rf-veil-inner { text-align: center; animation: rf-fade-in 0.45s var(--rf-ease-out) both; }
-.rf-veil-ring {
-  width: 54px;
-  height: 54px;
-  margin: 0 auto 1.15rem;
-  border-radius: 50%;
-  background: conic-gradient(from 0deg, transparent 0 58%, var(--rf-accent-deep) 74%, var(--rf-accent-soft) 96%, transparent 100%);
-  animation: rf-spin 900ms linear infinite;
-  mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px));
-  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px));
+.rf-veil-bar {
+  position: relative;
+  width: 208px;
+  height: 3px;
+  margin: 2rem auto 1rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.07);
+  overflow: hidden;
 }
-.rf-veil .rf-kicker { margin: 0 0 0.3rem; }
+.rf-veil-bar::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -45%;
+  width: 45%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, var(--rf-accent), var(--rf-accent-soft), transparent);
+  animation: rf-sweep 1.3s var(--rf-ease-out) infinite;
+}
 .rf-veil-note { margin: 0; color: var(--rf-text-dim); font-size: 0.86rem; }
+
+/* ==========================================================================
+   6b. Wordmark
+   ========================================================================== */
+
+.rf-logo {
+  display: block;
+  user-select: none;
+  line-height: 0;
+}
+.rf-logo img {
+  display: block;
+  width: 100%;
+  max-width: 216px;
+  height: auto;
+  transition: transform var(--rf-dur) var(--rf-ease-spring);
+}
+.rf-logo:hover img { transform: translateY(-2px); }
+
+.rf-logo-lg img {
+  max-width: min(340px, 74vw);
+  filter: drop-shadow(0 10px 34px rgba(0, 0, 0, 0.55)) drop-shadow(0 0 30px var(--rf-accent-wash));
+}
+/* The veil centres its children, but the img is a block of its own width. */
+.rf-logo-lg { display: flex; justify-content: center; }
+
+.rf-hero > .rf-logo { margin: 0 0 1rem; }
+.rf-hero.rf-compact > .rf-logo { margin-bottom: 0.8rem; }
+.rf-sidebar-brand .rf-logo { margin-bottom: 0.7rem; }
 
 /* ==========================================================================
    7. Scroll reveal (classes are applied by motion.js, never by default,
@@ -338,7 +377,7 @@ div[data-testid="stIFrame"]:has(iframe[height="0"]),
 .rf-hero.rf-compact .rf-status { margin-top: 1rem; padding-top: 0.85rem; }
 
 /* Entrance, first paint only. motion.js sets html.rf-booted once it is done. */
-html:not(.rf-booted) .rf-hero > .rf-kicker { animation: rf-fade-up 0.66s var(--rf-ease-out) 0.06s both; }
+html:not(.rf-booted) .rf-hero > .rf-logo { animation: rf-fade-up 0.66s var(--rf-ease-out) 0.06s both; }
 html:not(.rf-booted) .rf-hero > h1 { animation: rf-fade-up 0.72s var(--rf-ease-out) 0.16s both; }
 html:not(.rf-booted) .rf-hero > .rf-lede { animation: rf-fade-up 0.72s var(--rf-ease-out) 0.28s both; }
 html:not(.rf-booted) .rf-hero > .rf-status { animation: rf-fade-up 0.72s var(--rf-ease-out) 0.4s both; }
@@ -764,20 +803,32 @@ div[data-testid="stTabs"] { margin-top: 0.15rem; }
 [data-testid="stSidebarCollapsedControl"] {
   display: flex !important;
   align-items: center !important;
-  gap: 0.05rem;
   top: 0.7rem !important;
   left: 0.7rem !important;
   z-index: 1000002 !important;
   background: linear-gradient(180deg, rgba(28, 28, 33, 0.94), rgba(17, 17, 21, 0.94)) !important;
   border: 1px solid var(--rf-line-strong) !important;
   border-radius: 12px !important;
-  padding: 0.12rem 0.75rem 0.12rem 0.12rem !important;
+  /* Padding lives on the button, so the whole pill is one hit target. */
+  padding: 0 !important;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   animation: rf-pulse-glow 3.4s var(--rf-ease-out) infinite;
   transition: transform var(--rf-fast) var(--rf-ease-spring);
 }
 [data-testid="stSidebarCollapsedControl"]:hover { transform: translateY(-1px) scale(1.03); }
+/* Reserved for st.logo, which this app does not use; it only adds dead width. */
+[data-testid="stSidebarCollapsedControl"] [data-testid="stLogoSpacer"] { display: none !important; }
+[data-testid="stSidebarCollapsedControl"] button {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.34rem !important;
+  padding: 0.36rem 0.74rem 0.36rem 0.5rem !important;
+  border-radius: 12px !important;
+  background: transparent !important;
+  border: none !important;
+  color: var(--rf-accent-soft) !important;
+}
 /* The control sits before the sidebar in the DOM, so it is only redundant while
    the sidebar is open. Desktop only: on mobile the force-close window can still
    report the sidebar as open, and hiding it there would strand the user. */
@@ -786,7 +837,9 @@ div[data-testid="stTabs"] { margin-top: 0.15rem; }
     display: none !important;
   }
 }
-[data-testid="stSidebarCollapsedControl"]::after {
+/* On the button, not the container: as a sibling of the button the label looked
+   clickable but was not, which is why tapping "Plan" did nothing. */
+[data-testid="stSidebarCollapsedControl"] button::after {
   content: "Plan";
   color: var(--rf-accent-soft);
   font-family: "DM Sans", sans-serif;
@@ -794,7 +847,6 @@ div[data-testid="stTabs"] { margin-top: 0.15rem; }
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  padding-right: 0.15rem;
 }
 
 /* ==========================================================================
@@ -869,6 +921,10 @@ div[data-testid="stTabs"] { margin-top: 0.15rem; }
   .rf-hero.rf-compact { padding: 1.05rem 1.15rem 1rem; }
   .rf-hero.rf-compact h1 { font-size: 1.16rem !important; }
 
+  .rf-logo img { max-width: 190px; }
+  .rf-logo-lg img { max-width: min(260px, 68vw); }
+  .rf-veil-bar { width: 160px; margin-top: 1.6rem; }
+
   .stTabs [data-baseweb="tab-list"] {
     gap: 0.25rem;
     overflow-x: auto;
@@ -920,7 +976,7 @@ div[data-testid="stTabs"] { margin-top: 0.15rem; }
   .stApp::before,
   .rf-hero::before,
   .rf-hero h1,
-  .rf-veil-ring,
+  .rf-veil-bar::after,
   .stButton > button[kind="primary"]::after,
   [data-testid="stSidebarCollapsedControl"],
   [data-testid="stSpinner"]::after {
