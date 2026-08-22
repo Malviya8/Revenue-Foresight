@@ -104,16 +104,12 @@ st.markdown(
         font-weight: 650 !important;
         color: #F2F2F2 !important;
       }
-      .block-container { padding-top: 5rem; padding-bottom: 3.5rem; max-width: 1120px; }
+      .block-container { padding-top: 2.25rem; padding-bottom: 3.5rem; max-width: 1120px; }
 
-      header[data-testid="stHeader"] {
-        background: #0C0C0C;
-        height: auto !important;
-        min-height: 3.75rem;
-        overflow: visible !important;
-      }
+      header[data-testid="stHeader"] { display: none !important; }
+      #MainMenu { visibility: hidden; }
+      .stAppDeployButton, .stDeployButton, [data-testid="stToolbar"] { display: none !important; }
       [data-testid="stDecoration"] { display: none; }
-      [data-testid="stToolbar"] { right: 0.75rem; top: 0.4rem; }
 
       .stSpinner, [data-testid="stSpinner"] {
         padding: 0.45rem 0 0.7rem;
